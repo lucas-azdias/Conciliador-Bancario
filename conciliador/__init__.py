@@ -1,0 +1,44 @@
+from pathlib import Path
+from typing import Callable
+
+
+# Constants
+DIR_IN_PATH = Path("in")
+DIR_OUT_PATH = Path("out")
+DIR_LOGS_PATH = Path("logs")
+DIR_DATABASE_PATH = Path("database")
+DIR_SUMMARIES_PATH = Path("summaries")
+DIR_TEMPLATE_PATH = Path("templates")
+
+DIR_IN_STATEMENTS_PATH = DIR_IN_PATH / "statements"
+DIR_IN_REPORTS_PATH = DIR_IN_PATH / "reports"
+
+DIR_OUT_STATEMENTS_PATH = DIR_OUT_PATH / "statements"
+DIR_OUT_REPORTS_PATH = DIR_OUT_PATH / "reports"
+
+DATABASE_TEMPLATE_PATH = DIR_TEMPLATE_PATH / "database.template.json"
+SUMMARY_TEMPLATE_PATH = DIR_TEMPLATE_PATH / "summary.template.json"
+VERIFICATION_TEMPLATE_PATH = DIR_TEMPLATE_PATH / "verification.template.json"
+
+TEMPLATE_DEFAULT_KEY_PATH = "_"
+TEMPLATE_DEFAULT_KEY_STATEMENTS = "statements"
+TEMPLATE_DEFAULT_KEY_REPORTS = "reports"
+TEMPLATE_DEFAULT_KEY_VALUE = "value"
+TEMPLATE_DEFAULT_KEY_INCOME = "entradas"
+TEMPLATE_DEFAULT_KEY_OUTCOME = "saidas"
+
+MONEY_REGEX_FORMATTER = [
+    [r"\b0+(\d+)", r"\1"],
+    [r"^(-?)(\d)$", r"\1\0\2"],
+    [r"(\d{1,3})(?=(\d{3})*(\d{2})$)", r"\1."],
+    [r"(.*)(\.)(\d{2})$|(\d{2})$", r"\1,\3\4"],
+    [r"^(-?),(\d{2})$", r"\1\0,\2"],
+    [r"(^-?\d.*)", r"R$ \1"],
+]
+
+
+# Common names lambda functions
+database_filename: Callable[[int | None, int | None], str] = lambda year = None, month = None: f"database.{year if year else "*"}_{f'{month:02}' if month else "*"}.json"
+summary_filename: Callable[[int | None, int | None], str] = lambda year = None, month = None, day = None: f"summary.{year if year else "*"}_{f'{month:02}' if month else "*"}_{f'{day:02}' if day else "*"}.json"
+log_statements_filename: Callable[[int | None, int | None], str] = lambda year = None, month = None: f"log_extratos_{year if year else "*"}_{f'{month:02}' if month else "*"}.log"
+log_reports_filename: Callable[[int | None, int | None], str] = lambda year = None, month = None: f"log_relatorios_{year if year else "*"}_{f'{month:02}' if month else "*"}.log"

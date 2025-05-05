@@ -1,0 +1,7 @@
+**/__pycache__/
+*.csv
+**/database
+**/summaries
+**/logs
+**/in
+**/out

@@ -1,0 +1,51 @@
+{
+    "year": null,
+    "month": null,
+    "day": null,
+    "statements": {
+        "pix": {
+            "pix_credito": ["sum", "^PIX CREDITO(?!.*TRR IVAI COMERCIO DE COMBUST).*"],
+            "transferencia": ["sum", "TRANSFERENCIA.*", "^\\d+$"]
+        },
+        "depositos": ["for", "DEPÓSITO.*"],
+        "cartoes": {
+            "credito": {
+                "visa": ["sum", "VENDAS CARTAO TIPO CREDITO.*CIELO-VISA.*"],
+                "master": ["sum", "VENDAS CARTAO TIPO CREDITO.*CIELO-MASTER.*"],
+                "elo": ["sum", "VENDAS CARTAO TIPO CREDITO.*CIELO-ELO.*"],
+                "hipercard": ["sum", "VENDAS CARTAO TIPO CREDITO.*CIELO-HIPERCA.*"],
+                "amex": ["sum", "VENDAS CARTAO TIPO CREDITO.*CIELO-AMERICA.*"]
+            },
+            "debito": {
+                "visa": ["sum", "VENDAS CARTAO TIPO DEBITO.*CIELO-VISA.*"],
+                "master": ["sum", "VENDAS CARTAO TIPO DEBITO.*CIELO-MAESTRO.*"],
+                "elo": ["sum", "VENDAS CARTAO TIPO DEBITO.*CIELO-ELO.*"]
+            }
+        }
+    },
+    "reports": {
+        "_": [".*", "finalizadoras"],
+        "dinheiro": ["for", "RECEBIMENTO DINHEIRO(?!.*RECEITAS)"],
+        "receitas": ["sum", ".*RECEITAS"],
+        "uso_e_consumo": ["sum", "USO E CONSUMO"],
+        "prazo": ["sum", "PRAZO"],
+        "pix": ["sum", "PIX.*"],
+        "credito": {
+            "visa": ["sum", "VISA CR[EÉ]DITO"],
+            "master": ["sum", "MASTER CR[EÉ]DITO"],
+            "elo": ["sum", "ELO CR[EÉ]DITO"],
+            "hipercard": ["sum", "HIPER"],
+            "amex": ["sum", ".*AMEX"]
+        },
+        "prepago credito": {
+            "visa": ["sum", "PR[EÉ][ -]?PAGO VISA CR[EÉ]DITO"],
+            "master": ["sum", "PR[EÉ][ -]?PAGO MASTER CR[EÉ]DITO"],
+            "elo": ["sum", "PR[EÉ][ -]?PAGO ELO CR[EÉ]DITO"]
+        },
+        "debito": {
+            "visa": ["sum", "(?:PR[EÉ][ -]?PAGO )?VISA D[EÉ]BITO"],
+            "master": ["sum", "(?:PR[EÉ][ -]?PAGO )?MASTER(?:CARD)? D[EÉ]BITO"],
+            "elo": ["sum", "(?:PR[EÉ][ -]?PAGO )?ELO D[EÉ]BITO"]
+        }
+    }
+}
