@@ -7,6 +7,16 @@ from typing import Any
 from . import log_statements_filename
 
 
+# money_regex_formatter = lambda currency: [
+#     [r"\b0+(\d+)", r"\1"],
+#     [r"^(-?)(\d)$", r"\1\0\2"],
+#     [r"(\d{1,3})(?=(\d{3})*(\d{2})$)", r"\1."],
+#     [r"(.*)(\.)(\d{2})$|(\d{2})$", r"\1,\3\4"],
+#     [r"^(-?),(\d{2})$", r"\1\0,\2"],
+#     [r"(^-?\d.*)", currency + r" \1"],
+# ]
+
+
 def n_flatten(nested_list: list, n: int) -> list:
     """
     Iteratively flattens a nested list to a maximum depth of `n`, ensuring the result is at most `n` levels deep.

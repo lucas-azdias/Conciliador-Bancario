@@ -1,6 +1,5 @@
-def conciliador():
-    print("Conciliador")
+from . import Conciliador
 
 
 if __name__ == "__main__":
-    conciliador()
+    Conciliador.main()
