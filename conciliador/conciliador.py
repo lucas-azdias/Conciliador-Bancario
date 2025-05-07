@@ -2,7 +2,7 @@ import argparse
 import pathlib
 
 from . import Currency
-from . import Database
+from .database import Database
 
 
 class Conciliador():

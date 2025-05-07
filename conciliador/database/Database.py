@@ -8,8 +8,10 @@ class Database():
 
     def __init__(
             self,
+            schema: typing.Dict[str, typing.Iterable[str]],
             database_path: typing.Optional[pathlib.Path] = None
         ) -> None:
+        self.__schema: typing.Dict[str, typing.Iterable[str]] = schema
         self.__database_path: str = database_path.absolute() if database_path else ":memory:"
         self.__conn: sqlite3.Connection = None
         self.__cursor: sqlite3.Cursor = None
@@ -24,11 +26,14 @@ class Database():
             table_name: str,
             columns: typing.Dict[str, str]
         ) -> None:
+        if table_name in self.__schema:
+            raise Exception("Table already exists in schema.")
+
         try:
             self.__connect()
 
             columns_def = ', '.join([f"{col} {dtype}" for col, dtype in columns.items()])
-            query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_def})"
+            query = f"CREATE TABLE {table_name} ({columns_def})"
 
             self.__cursor.execute(query)
             self.__conn.commit()
@@ -37,6 +42,7 @@ class Database():
             raise Exception(f"Failed to create table: {e}")
 
         finally:
+            self.__schema[table_name] = columns
             self.__close()
 
 
@@ -230,6 +236,44 @@ class Database():
             self.__conn.close()
 
 
+    def __validate_schema(self) -> None:
+        try:
+            self.__connect()
+
+            # Get all tables
+            self.__cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            existing_tables = {row[0] for row in self.__cursor.fetchall()}
+
+            for table, expected_columns in self.__schema.items():
+                if table not in existing_tables:
+                    raise ValueError(f"Missing expected table: \"{table}\"")
+
+                # Get actual column info
+                self.__cursor.execute(f"PRAGMA table_info({table});")
+                actual_columns = {row[1]: row[2].upper() for row in self.__cursor.fetchall()}
+
+                for col_name, expected_type in expected_columns.items():
+                    if col_name not in actual_columns:
+                        raise ValueError(f"Missing column \"{col_name}\" in table \"{table}\"")
+
+                    actual_type = actual_columns[col_name]
+                    if actual_type != expected_type:
+                        raise ValueError(
+                            f"Type mismatch in table \"{table}\", column \"{col_name}\": "
+                            f"expected {expected_type}, got {actual_type}"
+                        )
+
+        except sqlite3.Error as e:
+            raise Exception(f"Failed to validate database schema: {e}")
+
+        finally:
+            self.__close()
+
+
 if __name__ == "__main__":
-    db = Database()
+    db = Database(
+        {
+            "SQLITE": ["version", "message"]
+        }
+    )
     print(db.query_fetch("SELECT sqlite_version();"))

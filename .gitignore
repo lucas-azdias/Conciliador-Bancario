@@ -1,8 +1,8 @@
 **/__pycache__/
 *.csv
-**/database
-**/summaries
-**/logs
-**/in
-**/out
-**/venv
+/database
+/summaries
+/logs
+/in
+/out
+/venv
