@@ -311,7 +311,7 @@ class Database():
             self.__close()
 
 
-    def __connect(self):
+    def __connect(self) -> None:
         try:
             self.__conn = sqlite3.connect(self.__database_path)
             self.__cursor = self.__conn.cursor()
@@ -319,7 +319,7 @@ class Database():
             raise Exception(f"Failed to connect to database: {e}")
 
 
-    def __close(self):
+    def __close(self) -> None:
         if self.__cursor:
             self.__cursor.close()
         if self.__conn:
