@@ -1,0 +1,7 @@
+{
+    "Statement": {
+        "day": "INTEGER",
+        "month": "INTEGER",
+        "year": "INTEGER"
+    }
+}

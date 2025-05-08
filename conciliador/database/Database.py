@@ -3,15 +3,19 @@ import polars
 import sqlite3
 import typing
 
+from . import Schema
+
 
 class Database():
 
     def __init__(
             self,
-            schema: typing.Dict[str, typing.Iterable[str]],
-            database_path: typing.Optional[pathlib.Path] = None
+            schema: Schema.Schema,
+            database_path: typing.Optional[pathlib.Path] = None,
+            can_load_schema: bool = False, # Enables add tables/columns from schema to the database
+            can_purge: bool = False # Enables purge tables/columns from database based on schema
         ) -> None:
-        self.__schema: typing.Dict[str, typing.Iterable[str]] = schema
+        self.__schema: Schema.Schema = schema
         self.__database_path: str = database_path.absolute() if database_path else ":memory:"
         self.__conn: sqlite3.Connection = None
         self.__cursor: sqlite3.Cursor = None
@@ -20,20 +24,23 @@ class Database():
         self.__connect()
         self.__close()
 
+        # Validates schema
+        self.__validate_schema(can_load_schema = can_load_schema, can_purge = can_purge)
+
 
     def create_table(
             self,
             table_name: str,
             columns: typing.Dict[str, str]
         ) -> None:
-        if table_name in self.__schema:
-            raise Exception("Table already exists in schema.")
+        if table_name in self.__schema.tables():
+            raise Exception("Table name already exists on schema tables.")
 
         try:
             self.__connect()
 
             columns_def = ', '.join([f"{col} {dtype}" for col, dtype in columns.items()])
-            query = f"CREATE TABLE {table_name} ({columns_def})"
+            query = f"CREATE TABLE {table_name} ({columns_def}) STRICT;"
 
             self.__cursor.execute(query)
             self.__conn.commit()
@@ -42,8 +49,86 @@ class Database():
             raise Exception(f"Failed to create table: {e}")
 
         finally:
-            self.__schema[table_name] = columns
+            self.__schema.add_table(table_name, columns)
             self.__close()
+
+
+    def drop_table(
+            self,
+            table_name: str
+        ) -> None:
+        if not table_name in self.__schema.tables():
+            raise Exception("Table name not found on schema tables.")
+
+        try:
+            self.__connect()
+
+            query = f"DROP TABLE {table_name}"
+
+            self.__cursor.execute(query)
+            self.__conn.commit()
+
+        except sqlite3.Error as e:
+            raise Exception(f"Failed to create table: {e}")
+
+        finally:
+            self.__close()
+            self.__schema.remove_table(table_name)
+
+
+    def add_column(
+            self,
+            table_name: str,
+            column_name: str,
+            column_type: str
+        ) -> None:
+        if not table_name in self.__schema.tables():
+            raise Exception("Table name not found on schema tables.")
+
+        if column_name in self.__schema.columns(table_name):
+            raise Exception("Column name already exists on schema table.")
+
+        try:
+            self.__connect()
+
+            query = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type};"
+
+            self.__cursor.execute(query)
+            self.__conn.commit()
+
+        except sqlite3.Error as e:
+            raise Exception(f"Failed to add column to table: {e}")
+
+        finally:
+            self.__schema.add_column(table_name, column_name, column_type)
+            self.__close()
+
+
+    def drop_column(
+            self,
+            table_name: str,
+            column_name: str
+        ) -> None:
+        if not table_name in self.__schema.tables():
+            raise Exception("Table name not found on schema tables.")
+
+        if not column_name in self.__schema.columns(table_name):
+            raise Exception("Column name not found on schema table.")
+
+        try:
+            self.__connect()
+
+            query = f"ALTER TABLE {table_name} DROP COLUMN {column_name};"
+
+            self.__cursor.execute(query)
+            self.__conn.commit()
+
+        except sqlite3.Error as e:
+            raise Exception(f"Failed to drop column from table: {e}")
+
+        finally:
+            self.__close()
+            self.__schema.remove_column(table_name, column_name)
 
 
     def insert(
@@ -56,7 +141,7 @@ class Database():
 
             columns = ', '.join(data.keys())
             placeholders = ', '.join(['?' for _ in data])
-            query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+            query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders});"
 
             self.__cursor.execute(query, list(data.values()))
             self.__conn.commit()
@@ -87,7 +172,7 @@ class Database():
                 params = list(conditions.values())
 
             fetched = polars.read_database(
-                query = query,
+                query = query + ";",
                 connection = self.__conn,
                 execute_options = {
                     "parameters": params
@@ -113,7 +198,7 @@ class Database():
 
             set_clause = ', '.join([f"{k} = ?" for k in data.keys()])
             where_clause = ' AND '.join([f"{k} = ?" for k in conditions.keys()])
-            query = f"UPDATE {table_name} SET {set_clause} WHERE {where_clause}"
+            query = f"UPDATE {table_name} SET {set_clause} WHERE {where_clause};"
             params = list(data.values()) + list(conditions.values())
             
             self.__cursor.execute(query, params)
@@ -137,7 +222,7 @@ class Database():
             self.__connect()
 
             where_clause = ' AND '.join([f"{k} = ?" for k in conditions.keys()])
-            query = f"DELETE FROM {table_name} WHERE {where_clause}"
+            query = f"DELETE FROM {table_name} WHERE {where_clause};"
 
             self.__cursor.execute(query, list(conditions.values()))
             self.__conn.commit()
@@ -200,6 +285,8 @@ class Database():
     def query_commit(
             self,
             query: str,
+            can_load_schema: bool = False,
+            can_purge: bool = False,
             *parameters: typing.Iterable
         ) -> None:
         try:
@@ -215,9 +302,12 @@ class Database():
             self.__conn.commit()
 
         except sqlite3.Error as e:
-            raise Exception(f"Failed to query and fetch data into dataframe: {e}")
+            raise Exception(f"Failed to query and commit: {e}")
 
         finally:
+            # Validate schema for changes
+            self.__validate_schema(can_load_schema = can_load_schema, can_purge = can_purge)
+
             self.__close()
 
 
@@ -236,44 +326,73 @@ class Database():
             self.__conn.close()
 
 
-    def __validate_schema(self) -> None:
+    def __validate_schema(
+            self,
+            can_load_schema,
+            can_purge
+        ) -> None:
         try:
             self.__connect()
 
             # Get all tables
             self.__cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             existing_tables = {row[0] for row in self.__cursor.fetchall()}
+            schema_tables = self.__schema.tables()
 
-            for table, expected_columns in self.__schema.items():
-                if table not in existing_tables:
-                    raise ValueError(f"Missing expected table: \"{table}\"")
+            # Verify if all schema tables are in database
+            for table_name in schema_tables:
+                if table_name not in existing_tables:
+                    if not can_load_schema:
+                        raise ValueError(f"Missing expected table on database: \"{table_name}\".")
+                    columns = self.__schema.columns(table_name)
+                    columns_def = ', '.join([f"{col} {dtype}" for col, dtype in columns.items()])
+                    query = f"CREATE TABLE {table_name} ({columns_def}) STRICT;"
+                    self.__cursor.execute(query)
+                    self.__conn.commit()
+                    continue
 
                 # Get actual column info
-                self.__cursor.execute(f"PRAGMA table_info({table});")
-                actual_columns = {row[1]: row[2].upper() for row in self.__cursor.fetchall()}
+                self.__cursor.execute(f"PRAGMA table_info({table_name});")
+                existing_columns = {row[1]: row[2].upper() for row in self.__cursor.fetchall()}
+                schema_columns = self.__schema.columns(table_name)
 
-                for col_name, expected_type in expected_columns.items():
-                    if col_name not in actual_columns:
-                        raise ValueError(f"Missing column \"{col_name}\" in table \"{table}\"")
+                # Verify if all schema table columns are in database
+                for column_name, column_type in schema_columns.items():
+                    if column_name not in existing_columns:
+                        if not can_load_schema:
+                            raise ValueError(f"Missing column \"{column_name}\" in table \"{table_name}\" on database.")
+                        query = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type};"
+                        self.__cursor.execute(query)
+                        self.__conn.commit()
+                        continue
 
-                    actual_type = actual_columns[col_name]
-                    if actual_type != expected_type:
+                    existing_type = existing_columns[column_name]
+                    if column_type != existing_type:
                         raise ValueError(
-                            f"Type mismatch in table \"{table}\", column \"{col_name}\": "
-                            f"expected {expected_type}, got {actual_type}"
+                            f"Type mismatch in table \"{table_name}\", column \"{column_name}\" on database: "
+                            f"expected \"{column_type}\", got \"{existing_type}\"."
                         )
+
+                # Verify if all database table columns are in schema
+                for column_name in existing_columns:
+                    if not column_name in self.__schema.columns(table_name):
+                        if not can_purge:
+                            raise ValueError(f"Database column \"{column_name}\" in table \"{table_name}\" not found on schema.")
+                        query = f"ALTER TABLE {table_name} DROP COLUMN {column_name};"
+                        self.__cursor.execute(query)
+                        self.__conn.commit()
+
+            # Verify if all database tables are in schema
+            for table_name in existing_tables:
+                if not table_name in self.__schema.tables():
+                    if not can_purge:
+                        raise ValueError(f"Database table \"{table_name}\" not found on schema.")
+                    query = f"DROP TABLE {table_name}"
+                    self.__cursor.execute(query)
+                    self.__conn.commit()
 
         except sqlite3.Error as e:
             raise Exception(f"Failed to validate database schema: {e}")
 
         finally:
             self.__close()
-
-
-if __name__ == "__main__":
-    db = Database(
-        {
-            "SQLITE": ["version", "message"]
-        }
-    )
-    print(db.query_fetch("SELECT sqlite_version();"))
