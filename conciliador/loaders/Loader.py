@@ -24,7 +24,9 @@ class Loader(abc.ABC):
 
         try:
             for path in self.__infolder.rglob(self.__path_filter):
-                self.process_file(path, self.__detect_encoding(path))
+                has_processed = self.process_file(path, self.__detect_encoding(path))
+                if has_processed:
+                    paths.append(path)
         except Exception as e:
             Exception(f"Error processing files: {e}")
         else:
