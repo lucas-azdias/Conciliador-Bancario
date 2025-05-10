@@ -33,6 +33,7 @@ class Loader(abc.ABC):
                 paths.append(path)
                 datas.append(data)
 
+        # Archive files
         self.__outfolder.mkdir(parents = True, exist_ok = True)
         for path in paths:
             path.rename(self.__outfolder / path.name)
