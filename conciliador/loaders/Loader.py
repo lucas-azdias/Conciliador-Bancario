@@ -1,6 +1,7 @@
 import abc
 import chardet
 import pathlib
+import polars
 import typing
 
 
@@ -20,26 +21,28 @@ class Loader(abc.ABC):
 
 
     def process(self) -> None:
-        paths: typing.List[pathlib.Path] = []
+        paths: typing.List[pathlib.Path] = list()
+        datas: typing.List[polars.DataFrame] = list()
 
-        try:
-            for path in self.__infolder.rglob(self.__path_filter):
-                has_processed = self.process_file(path, self.__detect_encoding(path))
-                if has_processed:
-                    paths.append(path)
-        except Exception as e:
-            Exception(f"Error processing files: {e}")
-        else:
-            self.__outfolder.mkdir(parents = True, exist_ok = True)
-            for path in paths:
-                path.rename(self.__outfolder / path.name)
+        for path in self.__infolder.rglob(self.__path_filter):
+            try:
+                data = self.process_file(path, self.__detect_encoding(path))
+            except Exception as e:
+                Exception(f"Error processing file \"{path}\": {e}")
+            else:
+                paths.append(path)
+                datas.append(data)
+
+        self.__outfolder.mkdir(parents = True, exist_ok = True)
+        for path in paths:
+            path.rename(self.__outfolder / path.name)
 
 
     def process_file(
             self,
             path: pathlib.Path,
             encoding: str
-        ) -> None:
+        ) -> polars.DataFrame:
         raise NotImplementedError("Subclasses must implement this method.")
 
 
