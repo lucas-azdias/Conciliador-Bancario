@@ -10,9 +10,9 @@ class Conciliador():
             self,
             db_schema_path: pathlib.Path = pathlib.Path("db/db_schema.json"),
             database_path: pathlib.Path = pathlib.Path("db/database.db"),
-            currency: str = "R$",
-            thousands: str = ".",
-            decimals: str = ","
+            currency: str = "USD",
+            thousands: str = ",",
+            decimals: str = "."
         ) -> None:
         self.__database: Database.Database = Database.Database(Schema.Schema(db_schema_path), database_path = database_path, can_load_schema = True)
         self.__currency: Currency.Currency = Currency.Currency(currency, thousands = thousands, decimals = decimals)
