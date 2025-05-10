@@ -48,8 +48,10 @@ class Database():
         except sqlite3.Error as e:
             raise Exception(f"Failed to create table: {e}")
 
-        finally:
+        else:
             self.__schema.add_table(table_name, columns)
+
+        finally:
             self.__close()
 
 
@@ -71,9 +73,11 @@ class Database():
         except sqlite3.Error as e:
             raise Exception(f"Failed to create table: {e}")
 
+        else:
+            self.__schema.remove_table(table_name)
+
         finally:
             self.__close()
-            self.__schema.remove_table(table_name)
 
 
     def add_column(
@@ -99,8 +103,10 @@ class Database():
         except sqlite3.Error as e:
             raise Exception(f"Failed to add column to table: {e}")
 
-        finally:
+        else:
             self.__schema.add_column(table_name, column_name, column_type)
+
+        finally:
             self.__close()
 
 
@@ -126,9 +132,11 @@ class Database():
         except sqlite3.Error as e:
             raise Exception(f"Failed to drop column from table: {e}")
 
+        else:
+            self.__schema.remove_column(table_name, column_name)
+
         finally:
             self.__close()
-            self.__schema.remove_column(table_name, column_name)
 
 
     def insert(
@@ -304,10 +312,11 @@ class Database():
         except sqlite3.Error as e:
             raise Exception(f"Failed to query and commit: {e}")
 
-        finally:
+        else:
             # Validate schema for changes
             self.__validate_schema(can_load_schema = can_load_schema, can_purge = can_purge)
 
+        finally:
             self.__close()
 
 
