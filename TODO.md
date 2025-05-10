@@ -1,0 +1,1 @@
+[ ] Implement Database class have logs
