@@ -1,17 +1,43 @@
 import pathlib
+import polars
+import typing
 
 from . import Loader
 
 
-class StatementLoader(Loader):
+STATEMENT_COLUMNS = ("Data", "Histórico", "Valor")
 
-    def __init__(self) -> None:
-        super.__init__()
+
+class StatementLoader(Loader.Loader):
+
+    def __init__(
+            self,
+            path_filter: str,
+            infolder: pathlib.Path,
+            outfolder: pathlib.Path,
+            encoding: typing.Optional[str] = None
+        ) -> None:
+        super().__init__(
+            path_filter = path_filter,
+            infolder = infolder,
+            outfolder = outfolder,
+            encoding = encoding
+        )
 
 
     def process_file(
             self,
             path: pathlib.Path,
             encoding: str
-        ) -> None:
-        ...
+        ) -> polars.DataFrame:
+        df = polars.read_csv(path, separator=";", encoding=encoding)
+        df.columns = STATEMENT_COLUMNS
+        return df
+
+
+if __name__ == "__main__":
+    StatementLoader(
+        "*.csv",
+        pathlib.Path(r"C:\Users\ladsw\OneDrive\Desktop\Business\Autoposto Portugal\Conciliação bancária\project\in\statements"),
+        pathlib.Path(r"C:\Users\ladsw\OneDrive\Desktop\Business\Autoposto Portugal\Conciliação bancária\project\out\statements")
+    ).process()
