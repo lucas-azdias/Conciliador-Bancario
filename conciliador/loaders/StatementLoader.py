@@ -30,7 +30,7 @@ class StatementLoader(Loader.Loader):
             path: pathlib.Path,
             encoding: str
         ) -> polars.DataFrame:
-        df = polars.read_csv(path, separator=";", encoding=encoding)
+        df = polars.read_csv(path, separator = ";", encoding = encoding)
         df.columns = STATEMENT_COLUMNS
         return df
 
