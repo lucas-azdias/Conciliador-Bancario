@@ -33,11 +33,3 @@ class StatementLoader(Loader.Loader):
         df = polars.read_csv(path, separator = ";", encoding = encoding)
         df.columns = STATEMENT_COLUMNS
         return df
-
-
-if __name__ == "__main__":
-    StatementLoader(
-        "*.csv",
-        pathlib.Path(r"C:\Users\ladsw\OneDrive\Desktop\Business\Autoposto Portugal\Conciliação bancária\project\in\statements"),
-        pathlib.Path(r"C:\Users\ladsw\OneDrive\Desktop\Business\Autoposto Portugal\Conciliação bancária\project\out\statements")
-    ).process()
