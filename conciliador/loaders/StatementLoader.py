@@ -16,14 +16,12 @@ class StatementLoader(Loader.Loader):
             self,
             path_filter: str,
             input: pathlib.Path,
-            archive: pathlib.Path,
-            encoding: typing.Optional[str] = None
+            archive: typing.Optional[pathlib.Path] = None,
         ) -> None:
         super().__init__(
             path_filter = path_filter,
             input = input,
             archive = archive,
-            encoding = encoding
         )
 
 
@@ -31,8 +29,8 @@ class StatementLoader(Loader.Loader):
     def process_file(
             self,
             path: pathlib.Path,
-            encoding: str
+            encoding: typing.Optional[str] = None
         ) -> polars.DataFrame:
-        df = polars.read_csv(path, separator = ";", encoding = encoding)
+        df = polars.read_csv(path, separator = ";", encoding = encoding or self.detect_encoding(path))
         df.columns = STATEMENT_COLUMNS
         return df

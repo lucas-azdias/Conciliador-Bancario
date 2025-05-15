@@ -16,14 +16,12 @@ class ReportLoader(Loader.Loader):
             self,
             path_filter: str,
             input: pathlib.Path,
-            archive: pathlib.Path,
-            encoding: typing.Optional[str] = None
+            archive: typing.Optional[pathlib.Path] = None,
         ) -> None:
         super().__init__(
             path_filter = path_filter,
             input = input,
             archive = archive,
-            encoding = encoding
         )
 
 
@@ -31,9 +29,9 @@ class ReportLoader(Loader.Loader):
     def process_file(
             self,
             path: pathlib.Path,
-            encoding: str
+            encoding: typing.Optional[str] = None
         ) -> polars.DataFrame:
-        report_content = open(path, encoding = encoding).read()
+        report_content = open(path, encoding = encoding or self.detect_encoding(path)).read()
 
         # Remove unuseful header
         report_content = report_content.split("\n", maxsplit = 5)[-1]
