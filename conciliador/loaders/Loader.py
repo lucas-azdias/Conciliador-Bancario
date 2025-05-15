@@ -9,30 +9,19 @@ import typing
 class Loader(abc.ABC):
 
     @typeguard.typechecked
-    def __init__(
+    def process_files(
             self,
-            path_filter: str,
             input: pathlib.Path,
-            archive: typing.Optional[pathlib.Path] = None,
-        ) -> None:
-        self.__path_filter: str = path_filter
-        self.__input: pathlib.Path = input
-        self.__archive: pathlib.Path = archive
-
-
-    @typeguard.typechecked
-    def process(
-            self,
-            encoding: typing.Optional[str] = None,
-            can_archive_files = False
+            folder_filter: typing.Optional[str] = "*",
+            encoding: typing.Optional[str] = None
         ) -> typing.Tuple[polars.DataFrame]:
         paths: typing.List[pathlib.Path] = list()
         dataframes: typing.List[polars.DataFrame] = list()
 
-        if self.__input.is_dir():
-            paths.extend(self.__input.rglob(self.__path_filter))
-        elif self.__input.is_file():
-            paths.append(self.__input)
+        if input.is_dir():
+            paths.extend(input.rglob(folder_filter))
+        elif input.is_file():
+            paths.append(input)
         else:
             raise Exception("Non file or folder path found.")
 
@@ -45,15 +34,6 @@ class Loader(abc.ABC):
                 paths.append(path)
                 dataframes.append(dataframe)
 
-        # Archive files
-        if can_archive_files:
-            if not self.__archive:
-                raise Exception("No archive folder was given.")
-
-            self.__archive.mkdir(parents = True, exist_ok = True)
-            for path in paths:
-                path.rename(self.__archive / path.name)
-
         return tuple(dataframes)
 
 
@@ -64,6 +44,46 @@ class Loader(abc.ABC):
             encoding: typing.Optional[str] = None
         ) -> polars.DataFrame:
         raise NotImplementedError("Subclasses must implement this method.")
+
+
+    @typeguard.typechecked
+    def archive_files(
+        self,
+        paths: typing.Iterable[pathlib.Path],
+        archive: pathlib.Path,
+        can_overwrite_archive: bool = False
+    ) -> None:
+        if not archive:
+            raise Exception("No archive folder was given.")
+
+        archive.mkdir(parents = True, exist_ok = True)
+
+        for path in paths:
+            destination = archive / path.name
+
+            # Skip if file exists and overwriting is not allowed
+            if destination.exists() and not can_overwrite_archive:
+                continue
+
+            # Remove the existing file
+            if destination.exists():
+                destination.unlink()
+
+            path.rename(destination)
+
+
+    @typeguard.typechecked
+    def archive_file(
+        self,
+        path: pathlib.Path,
+        archive: pathlib.Path,
+        can_overwrite_archive = False
+    ) -> None:
+        self.archive_files(
+            [path],
+            archive,
+            can_overwrite_archive = True
+        )
 
 
     @typeguard.typechecked
