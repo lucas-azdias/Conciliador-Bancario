@@ -1,7 +1,29 @@
 {
+    "Report": {
+        "day": "INTEGER",
+        "month": "INTEGER",
+        "year": "INTEGER",
+        "shift": "INTEGER",
+        "employee": "TEXT",
+        "start_hour": "INTEGER",
+        "start_min": "INTEGER",
+        "start_sec": "INTEGER",
+        "end_hour": "INTEGER",
+        "end_min": "INTEGER",
+        "end_sec": "INTEGER"
+    },
+
+    "Finisher": {
+        "report_id": "INTEGER",
+        "name": "TEXT",
+        "value": "INTEGER"
+    },
+
     "Statement": {
         "day": "INTEGER",
         "month": "INTEGER",
-        "year": "INTEGER"
+        "year": "INTEGER",
+        "name": "TEXT",
+        "value": "INTEGER"
     }
 }
