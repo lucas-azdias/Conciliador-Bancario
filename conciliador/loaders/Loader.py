@@ -80,7 +80,7 @@ class Loader(abc.ABC):
     def extract_paths(
         self,
         input: pathlib.Path,
-        folder_filter: typing.Optional[str] = "*"
+        folder_filter: str = "*"
     ) -> typing.Tuple[pathlib.Path]:
         paths: typing.List[pathlib.Path] = list()
 
