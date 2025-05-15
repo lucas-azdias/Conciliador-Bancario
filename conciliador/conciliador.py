@@ -3,6 +3,7 @@ import typeguard
 
 from . import Currency
 from .database import Database, Schema
+from .loaders import ReportLoader, StatementLoader
 
 
 class Conciliador():
@@ -21,25 +22,59 @@ class Conciliador():
 
 
     @typeguard.typechecked
-    def load(
-            infolder: str,
-            outfolder: str
+    def load_reports(
+            self,
+            input: pathlib.Path,
+            archive: pathlib.Path,
+            can_archive: bool = False,
+            can_overwrite_archive: bool = False
         ) -> None:
+        loader = ReportLoader.ReportLoader()
+
+        # Load files and archive them
+        paths = loader.extract_paths(input, folder_filter = "*.csv")
+        dataframes = loader.process_files(paths)
+        if can_archive:
+            loader.archive_files(paths, archive, can_overwrite_archive = can_overwrite_archive)
+
+        # Save dataframes into database
+        print(dataframes)
+        ...
+
+
+    @typeguard.typechecked
+    def load_statements(
+            self,
+            input: pathlib.Path,
+            archive: pathlib.Path,
+            can_archive: bool = False,
+            can_overwrite_archive: bool = False
+        ) -> None:
+        loader = StatementLoader.StatementLoader()
+
+        # Load files and archive them
+        paths = loader.extract_paths(input, folder_filter = "*.csv")
+        dataframes = loader.process_files(paths)
+        if can_archive:
+            loader.archive_files(paths, archive, can_overwrite_archive = can_overwrite_archive)
+
+        # Save dataframes into database
+        print(dataframes)
         ...
 
 
     @typeguard.typechecked
     def compile(
-            infolder: str,
-            outfolder: str
+            self
+            #...
         ) -> None:
         ...
 
 
     @typeguard.typechecked
     def check(
-            infolder: str,
-            outfolder: str
+            self
+            #...
         ) -> None:
         ...
 
