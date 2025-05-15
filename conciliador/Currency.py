@@ -1,5 +1,9 @@
+import typeguard
+
+
 class Currency():
 
+    @typeguard.typechecked
     def __init__(
             self,
             currency: str,
@@ -10,6 +14,7 @@ class Currency():
         self.__thousands: str = thousands
         self.__decimals: str = decimals
 
+    @typeguard.typechecked
     def format_money(
             self,
             value: int | str,

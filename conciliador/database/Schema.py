@@ -2,6 +2,7 @@ import collections
 import copy
 import json
 import pathlib
+import typeguard
 import typing
 
 
@@ -16,16 +17,19 @@ DATATYPES = (
 
 class Schema():
 
+    @typeguard.typechecked
     def __init__(self, path: typing.Optional[pathlib.Path] = None):
         self.__tables: typing.Dict[str, typing.Dict[str, str]] = collections.defaultdict(dict)
         if path:
             self.import_schema(path)
 
 
+    @typeguard.typechecked
     def copy(self) -> typing.Self:
         return copy.deepcopy(self)
 
 
+    @typeguard.typechecked
     def import_schema(
             self,
             path: pathlib.Path
@@ -44,6 +48,7 @@ class Schema():
             self.add_table(table_name, columns)
 
 
+    @typeguard.typechecked
     def add_table(
             self,
             table_name: str,
@@ -65,6 +70,7 @@ class Schema():
             self.__tables[table_name][column_name] = column_type
 
 
+    @typeguard.typechecked
     def remove_table(
             self,
             table_name: str
@@ -75,6 +81,7 @@ class Schema():
         self.__tables.pop(table_name)
 
 
+    @typeguard.typechecked
     def add_column(
             self,
             table_name: str,
@@ -90,6 +97,7 @@ class Schema():
         self.__tables[table_name][column_name] = column_type
 
 
+    @typeguard.typechecked
     def remove_column(
             self,
             table_name: str,
@@ -104,10 +112,12 @@ class Schema():
         self.__tables[table_name].pop(column_name)
 
 
+    @typeguard.typechecked
     def tables(self) -> typing.Tuple[str]:
         return tuple(self.__tables.keys())
 
 
+    @typeguard.typechecked
     def columns(
             self,
             table_name: str

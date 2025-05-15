@@ -2,11 +2,13 @@ import abc
 import chardet
 import pathlib
 import polars
+import typeguard
 import typing
 
 
 class Loader(abc.ABC):
 
+    @typeguard.typechecked
     def __init__(
             self,
             path_filter: str,
@@ -20,6 +22,7 @@ class Loader(abc.ABC):
         self.__encoding = encoding
 
 
+    @typeguard.typechecked
     def process(self) -> None:
         paths: typing.List[pathlib.Path] = list()
         datas: typing.List[polars.DataFrame] = list()
@@ -39,6 +42,7 @@ class Loader(abc.ABC):
             path.rename(self.__outfolder / path.name)
 
 
+    @typeguard.typechecked
     def process_file(
             self,
             path: pathlib.Path,
@@ -47,6 +51,7 @@ class Loader(abc.ABC):
         raise NotImplementedError("Subclasses must implement this method.")
 
 
+    @typeguard.typechecked
     def __detect_encoding(
             self,
             path: pathlib.Path

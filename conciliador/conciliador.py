@@ -1,4 +1,5 @@
 import pathlib
+import typeguard
 
 from . import Currency
 from .database import Database, Schema
@@ -6,6 +7,7 @@ from .database import Database, Schema
 
 class Conciliador():
 
+    @typeguard.typechecked
     def __init__(
             self,
             db_schema_path: pathlib.Path = pathlib.Path("db/db_schema.json"),
@@ -18,6 +20,7 @@ class Conciliador():
         self.__currency: Currency.Currency = Currency.Currency(currency, thousands = thousands, decimals = decimals)
 
 
+    @typeguard.typechecked
     def load(
             infolder: str,
             outfolder: str

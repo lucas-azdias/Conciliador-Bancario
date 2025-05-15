@@ -1,6 +1,7 @@
 import pathlib
 import polars
 import sqlite3
+import typeguard
 import typing
 
 from . import Schema
@@ -8,6 +9,7 @@ from . import Schema
 
 class Database():
 
+    @typeguard.typechecked
     def __init__(
             self,
             schema: Schema.Schema,
@@ -28,6 +30,7 @@ class Database():
         self.__validate_schema(can_load_schema = can_load_schema, can_purge = can_purge)
 
 
+    @typeguard.typechecked
     def create_table(
             self,
             table_name: str,
@@ -55,6 +58,7 @@ class Database():
             self.__close()
 
 
+    @typeguard.typechecked
     def drop_table(
             self,
             table_name: str
@@ -80,6 +84,7 @@ class Database():
             self.__close()
 
 
+    @typeguard.typechecked
     def add_column(
             self,
             table_name: str,
@@ -110,6 +115,7 @@ class Database():
             self.__close()
 
 
+    @typeguard.typechecked
     def drop_column(
             self,
             table_name: str,
@@ -139,6 +145,7 @@ class Database():
             self.__close()
 
 
+    @typeguard.typechecked
     def insert(
             self,
             table_name: str,
@@ -163,6 +170,7 @@ class Database():
             self.__close()
 
 
+    @typeguard.typechecked
     def read(
             self,
             table_name: str,
@@ -195,6 +203,7 @@ class Database():
             self.__close()
 
 
+    @typeguard.typechecked
     def update(
             self,
             table_name: str,
@@ -221,6 +230,7 @@ class Database():
             self.__close()
 
 
+    @typeguard.typechecked
     def delete(
             self,
             table_name: str,
@@ -244,6 +254,7 @@ class Database():
             self.__close()
 
 
+    @typeguard.typechecked
     def query_fetch(
             self,
             query: str,
@@ -271,6 +282,7 @@ class Database():
         return tuple(fetched)
 
 
+    @typeguard.typechecked
     def query_dataframe(
             self,
             query: str
@@ -290,6 +302,7 @@ class Database():
         return fetched
 
 
+    @typeguard.typechecked
     def query_commit(
             self,
             query: str,
@@ -320,6 +333,7 @@ class Database():
             self.__close()
 
 
+    @typeguard.typechecked
     def __connect(self) -> None:
         try:
             self.__conn = sqlite3.connect(self.__database_path)
@@ -328,6 +342,7 @@ class Database():
             raise Exception(f"Failed to connect to database: {e}")
 
 
+    @typeguard.typechecked
     def __close(self) -> None:
         if self.__cursor:
             self.__cursor.close()
@@ -335,6 +350,7 @@ class Database():
             self.__conn.close()
 
 
+    @typeguard.typechecked
     def __validate_schema(
             self,
             can_load_schema,

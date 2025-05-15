@@ -1,1 +1,2 @@
-[ ] Implement Database class have logs
+[ ] Implement Database class with logs
+[ ] Implement Ty package for typing errors

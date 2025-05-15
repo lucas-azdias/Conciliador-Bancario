@@ -1,5 +1,6 @@
 import pathlib
 import polars
+import typeguard
 import typing
 
 from . import Loader
@@ -10,6 +11,7 @@ STATEMENT_COLUMNS = ("Data", "Histórico", "Valor")
 
 class StatementLoader(Loader.Loader):
 
+    @typeguard.typechecked
     def __init__(
             self,
             path_filter: str,
@@ -25,6 +27,7 @@ class StatementLoader(Loader.Loader):
         )
 
 
+    @typeguard.typechecked
     def process_file(
             self,
             path: pathlib.Path,

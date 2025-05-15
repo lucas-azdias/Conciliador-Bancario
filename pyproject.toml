@@ -10,7 +10,9 @@ requires-python = ">=3.13"
 dependencies = [
     "chardet (>=5.2.0,<6.0.0)",
     "polars (>=1.29.0,<2.0.0)",
-    "antlr4-python3-runtime (>=4.13.2,<5.0.0)"
+    "antlr4-python3-runtime (>=4.13.2,<5.0.0)",
+    "typeguard (>=4.4.2,<5.0.0)",
+    "python-dotenv (>=1.1.0,<2.0.0)",
 ]
 
 

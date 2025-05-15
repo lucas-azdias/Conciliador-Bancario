@@ -1,5 +1,6 @@
 import pathlib
 import polars
+import typeguard
 import typing
 
 from . import Loader
@@ -10,6 +11,7 @@ REPORT_COLUMNS = ("Turno", "Funcionário", "Data", "Início", "Término", "Final
 
 class ReportLoader(Loader.Loader):
 
+    @typeguard.typechecked
     def __init__(
             self,
             path_filter: str,
@@ -25,6 +27,7 @@ class ReportLoader(Loader.Loader):
         )
 
 
+    @typeguard.typechecked
     def process_file(
             self,
             path: pathlib.Path,
