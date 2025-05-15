@@ -77,7 +77,7 @@ class Loader(abc.ABC):
         self,
         path: pathlib.Path,
         archive: pathlib.Path,
-        can_overwrite_archive = False
+        can_overwrite_archive: bool = False
     ) -> None:
         self.archive_files(
             [path],
