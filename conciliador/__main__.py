@@ -1,6 +1,10 @@
 import argparse
 import dotenv
 import os
+import pathlib
+import typing
+
+from . import Conciliador
 
 
 def main():
@@ -47,6 +51,24 @@ def main():
         help = "Archive folder path (optional)"
     )
 
+    # Optional db_schema_path (default in .env)
+    parser.add_argument(
+        "--db_schema_path",
+        dest = "db_schema_path",
+        default = os.getenv("DB_SCHEMA_PATH"),
+        required = False,
+        help = "Database schema file path (optional)"
+    )
+
+    # Optional database_path (default in .env)
+    parser.add_argument(
+        "--database_path",
+        dest = "database_path",
+        default = os.getenv("DATABASE_PATH"),
+        required = False,
+        help = "Database file path (optional)"
+    )
+
     # Optional currency (default in .env)
     parser.add_argument(
         "--currency",
@@ -75,12 +97,30 @@ def main():
     )
 
     # Load and parse arguments
-    args = parser.parse_args()
+    args = {
+        key: value
+        for key, value in vars(parser.parse_args()).items()
+    }
 
-    print(f"Operation: {args.operation}")
-    print(f"Input file/folder: {args.input}")
-    print(f"Output folder: {args.output}")
-    print(f"Archive folder: {args.archive}")
+    # Function to clear empty values in args
+    clear_empty_args: typing.Callable[[typing.Dict[str, typing.Any]], typing.Dict[str, typing.Any]] = lambda d: {
+        key: value
+        for key, value in d.items()
+        if not value is None
+    }
+
+    # Instanciating the main class for the program
+    Conciliador.Conciliador(
+        **clear_empty_args(
+            {
+                "db_schema_path": pathlib.Path(args["db_schema_path"]),
+                "database_path": pathlib.Path(args["database_path"]),
+                "currency": args["currency"],
+                "thousands": args["thousands"],
+                "decimals": args["decimals"],
+            }
+        )
+    )
 
 
 if __name__ == "__main__":
