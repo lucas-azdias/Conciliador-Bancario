@@ -15,14 +15,14 @@ class StatementLoader(Loader.Loader):
     def __init__(
             self,
             path_filter: str,
-            infolder: pathlib.Path,
-            outfolder: pathlib.Path,
+            input: pathlib.Path,
+            archive: pathlib.Path,
             encoding: typing.Optional[str] = None
         ) -> None:
         super().__init__(
             path_filter = path_filter,
-            infolder = infolder,
-            outfolder = outfolder,
+            input = input,
+            archive = archive,
             encoding = encoding
         )
 

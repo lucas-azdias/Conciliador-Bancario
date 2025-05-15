@@ -12,13 +12,13 @@ class Loader(abc.ABC):
     def __init__(
             self,
             path_filter: str,
-            infolder: pathlib.Path,
-            outfolder: pathlib.Path,
+            input: pathlib.Path,
+            archive: pathlib.Path,
             encoding: typing.Optional[str] = None
         ) -> None:
         self.__path_filter: str = path_filter
-        self.__infolder: pathlib.Path = infolder
-        self.__outfolder: pathlib.Path = outfolder
+        self.__input: pathlib.Path = input
+        self.__archive: pathlib.Path = archive
         self.__encoding: typing.Optional[str] = encoding
 
 
@@ -27,7 +27,7 @@ class Loader(abc.ABC):
         paths: typing.List[pathlib.Path] = list()
         datas: typing.List[polars.DataFrame] = list()
 
-        for path in self.__infolder.rglob(self.__path_filter):
+        for path in self.__input.rglob(self.__path_filter):
             try:
                 data = self.process_file(path, self.__detect_encoding(path))
             except Exception as e:
@@ -37,9 +37,9 @@ class Loader(abc.ABC):
                 datas.append(data)
 
         # Archive files
-        self.__outfolder.mkdir(parents = True, exist_ok = True)
+        self.__archive.mkdir(parents = True, exist_ok = True)
         for path in paths:
-            path.rename(self.__outfolder / path.name)
+            path.rename(self.__archive / path.name)
 
 
     @typeguard.typechecked
