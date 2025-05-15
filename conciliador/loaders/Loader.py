@@ -13,7 +13,7 @@ class Loader(abc.ABC):
             self,
             paths: typing.Iterable[pathlib.Path],
             encoding: typing.Optional[str] = None
-        ) -> typing.Tuple[polars.DataFrame]:
+        ) -> typing.Tuple[polars.DataFrame, ...]:
         dataframes: typing.List[polars.DataFrame] = list()
 
         for path in paths:
@@ -81,7 +81,7 @@ class Loader(abc.ABC):
         self,
         input: pathlib.Path,
         folder_filter: str = "*"
-    ) -> typing.Tuple[pathlib.Path]:
+    ) -> typing.Tuple[pathlib.Path, ...]:
         paths: typing.List[pathlib.Path] = list()
 
         if input.is_dir():
