@@ -17,25 +17,34 @@ def main():
     # Required operation
     parser.add_argument(
         "operation",
-        choices = ["load", "summarize", "verify"],
-        help = "Operation to perform (required): \"load\", \"summarize\", \"verify\"")
+        choices = ["load", "compile", "check", "all"],
+        help = "Operation to perform (required): \"load\", \"compile\", \"check\", \"all\"")
 
-    # Optional input file
+    # Optional input file/folder
     parser.add_argument(
-        "--in",
-        dest = "infolder",
+        "--input",
+        dest = "input",
         default = "in",
         required = False,
-        help = "Input file path (optional)"
+        help = "Input file/folder path (optional)"
     )
 
-    # Optional output file
+    # Optional output folder
     parser.add_argument(
-        "--out",
-        dest = "outfolder",
+        "--output",
+        dest = "output",
         default = "out",
         required = False,
-        help = "Output file path (optional)"
+        help = "output folder path (optional)"
+    )
+
+    # Optional archive folder
+    parser.add_argument(
+        "--archive",
+        dest = "archive",
+        default = "archive",
+        required = False,
+        help = "Archive folder path (optional)"
     )
 
     # Optional currency (default in .env)
@@ -69,8 +78,9 @@ def main():
     args = parser.parse_args()
 
     print(f"Operation: {args.operation}")
-    print(f"Input file: {args.infolder}")
-    print(f"Output file: {args.outfolder}")
+    print(f"Input file/folder: {args.input}")
+    print(f"Output folder: {args.output}")
+    print(f"Archive folder: {args.archive}")
 
 
 if __name__ == "__main__":

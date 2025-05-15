@@ -28,5 +28,21 @@ class Conciliador():
         ...
 
 
+    @typeguard.typechecked
+    def compile(
+            infolder: str,
+            outfolder: str
+        ) -> None:
+        ...
+
+
+    @typeguard.typechecked
+    def check(
+            infolder: str,
+            outfolder: str
+        ) -> None:
+        ...
+
+
 if __name__ == "__main__":
     c = Conciliador()
