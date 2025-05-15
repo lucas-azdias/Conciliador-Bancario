@@ -42,7 +42,7 @@ class Database():
         try:
             self.__connect()
 
-            columns_def = ', '.join([f"{col} {dtype}" for col, dtype in columns.items()])
+            columns_def = ", ".join([f"{col} {dtype}" for col, dtype in columns.items()])
             query = f"CREATE TABLE {table_name} ({columns_def}) STRICT;"
 
             self.__cursor.execute(query)
@@ -154,8 +154,8 @@ class Database():
         try:
             self.__connect()
 
-            columns = ', '.join(data.keys())
-            placeholders = ', '.join(['?' for _ in data])
+            columns = ", ".join(data.keys())
+            placeholders = ", ".join(["?" for _ in data])
             query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders});"
 
             self.__cursor.execute(query, list(data.values()))
@@ -183,7 +183,7 @@ class Database():
             params = []
 
             if conditions:
-                where_clause = ' AND '.join([f"{k} = ?" for k in conditions.keys()])
+                where_clause = " AND ".join([f"{k} = ?" for k in conditions.keys()])
                 query += f" WHERE {where_clause}"
                 params = list(conditions.values())
 
@@ -213,8 +213,8 @@ class Database():
         try:
             self.__connect()
 
-            set_clause = ', '.join([f"{k} = ?" for k in data.keys()])
-            where_clause = ' AND '.join([f"{k} = ?" for k in conditions.keys()])
+            set_clause = ", ".join([f"{k} = ?" for k in data.keys()])
+            where_clause = " AND ".join([f"{k} = ?" for k in conditions.keys()])
             query = f"UPDATE {table_name} SET {set_clause} WHERE {where_clause};"
             params = list(data.values()) + list(conditions.values())
             
@@ -239,7 +239,7 @@ class Database():
         try:
             self.__connect()
 
-            where_clause = ' AND '.join([f"{k} = ?" for k in conditions.keys()])
+            where_clause = " AND ".join([f"{k} = ?" for k in conditions.keys()])
             query = f"DELETE FROM {table_name} WHERE {where_clause};"
 
             self.__cursor.execute(query, list(conditions.values()))
@@ -360,7 +360,7 @@ class Database():
             self.__connect()
 
             # Get all tables
-            self.__cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            self.__cursor.execute("SELECT name FROM sqlite_master WHERE type=\"table\";")
             existing_tables = {row[0] for row in self.__cursor.fetchall()}
             schema_tables = self.__schema.tables()
 
@@ -370,7 +370,7 @@ class Database():
                     if not can_load_schema:
                         raise ValueError(f"Missing expected table on database: \"{table_name}\".")
                     columns = self.__schema.columns(table_name)
-                    columns_def = ', '.join([f"{col} {dtype}" for col, dtype in columns.items()])
+                    columns_def = ", ".join([f"{col} {dtype}" for col, dtype in columns.items()])
                     query = f"CREATE TABLE {table_name} ({columns_def}) STRICT;"
                     self.__cursor.execute(query)
                     self.__conn.commit()
