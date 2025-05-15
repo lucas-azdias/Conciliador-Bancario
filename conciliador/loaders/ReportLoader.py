@@ -12,20 +12,6 @@ REPORT_COLUMNS = ("Turno", "Funcionário", "Data", "Início", "Término", "Final
 class ReportLoader(Loader.Loader):
 
     @typeguard.typechecked
-    def __init__(
-            self,
-            path_filter: str,
-            input: pathlib.Path,
-            archive: typing.Optional[pathlib.Path] = None,
-        ) -> None:
-        super().__init__(
-            path_filter = path_filter,
-            input = input,
-            archive = archive,
-        )
-
-
-    @typeguard.typechecked
     def process_file(
             self,
             path: pathlib.Path,
