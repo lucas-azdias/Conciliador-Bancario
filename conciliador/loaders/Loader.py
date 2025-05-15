@@ -16,10 +16,10 @@ class Loader(abc.ABC):
             outfolder: pathlib.Path,
             encoding: typing.Optional[str] = None
         ) -> None:
-        self.__path_filter = path_filter
-        self.__infolder = infolder
-        self.__outfolder = outfolder
-        self.__encoding = encoding
+        self.__path_filter: str = path_filter
+        self.__infolder: pathlib.Path = infolder
+        self.__outfolder: pathlib.Path = outfolder
+        self.__encoding: typing.Optional[str] = encoding
 
 
     @typeguard.typechecked
