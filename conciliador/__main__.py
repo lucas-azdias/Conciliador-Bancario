@@ -5,10 +5,11 @@ import os
 
 def main():
     # Load environment variables from .env file
-    if dotenv.load_dotenv():
-        print(".ENV variables have been loaded.")
-    else:
-        print("No .ENV variables have been loaded.")
+    dotenv.load_dotenv(
+        dotenv.find_dotenv(raise_error_if_not_found = True),
+        verbose = True,
+        encoding = "utf-8"
+    )
 
     # Create parser for arguments
     parser = argparse.ArgumentParser(description = "Process some operation with input/output files.")
