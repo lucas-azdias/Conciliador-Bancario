@@ -11,19 +11,10 @@ class Loader(abc.ABC):
     @typeguard.typechecked
     def process_files(
             self,
-            input: pathlib.Path,
-            folder_filter: typing.Optional[str] = "*",
+            paths: typing.Iterable[pathlib.Path],
             encoding: typing.Optional[str] = None
         ) -> typing.Tuple[polars.DataFrame]:
-        paths: typing.List[pathlib.Path] = list()
         dataframes: typing.List[polars.DataFrame] = list()
-
-        if input.is_dir():
-            paths.extend(input.rglob(folder_filter))
-        elif input.is_file():
-            paths.append(input)
-        else:
-            raise Exception("Non file or folder path found.")
 
         for path in paths:
             try:
@@ -31,7 +22,6 @@ class Loader(abc.ABC):
             except Exception as e:
                 Exception(f"Error processing file \"{path}\": {e}")
             else:
-                paths.append(path)
                 dataframes.append(dataframe)
 
         return tuple(dataframes)
@@ -80,10 +70,28 @@ class Loader(abc.ABC):
         can_overwrite_archive: bool = False
     ) -> None:
         self.archive_files(
-            [path],
-            archive,
-            can_overwrite_archive = True
+            paths = [path],
+            archive = archive,
+            can_overwrite_archive = can_overwrite_archive
         )
+
+
+    @typeguard.typechecked
+    def extract_paths(
+        self,
+        input: pathlib.Path,
+        folder_filter: typing.Optional[str] = "*"
+    ) -> typing.Tuple[pathlib.Path]:
+        paths: typing.List[pathlib.Path] = list()
+
+        if input.is_dir():
+            paths.extend(input.rglob(folder_filter))
+        elif input.is_file():
+            paths.append(input)
+        else:
+            raise Exception("Non file or folder path found.")
+
+        return tuple(paths)
 
 
     @typeguard.typechecked
