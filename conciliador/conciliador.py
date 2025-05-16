@@ -18,7 +18,7 @@ class Conciliador():
             thousands: str = ",",
             decimals: str = "."
         ) -> None:
-        self.__database: Database.Database = Database.Database(Schema.Schema(db_schema_path), database_path = database_path, can_load_schema = True)
+        self.__database: Database.Database = Database.Database(Schema.Schema("id", path = db_schema_path), database_path = database_path, can_load_schema = True)
         self.__currency: Currency.Currency = Currency.Currency(currency, thousands = thousands, decimals = decimals)
 
 

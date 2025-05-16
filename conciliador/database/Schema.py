@@ -14,6 +14,8 @@ DATATYPES = (
     "BLOB",
 )
 
+ID_COLUMN_DATATYPE = "INTEGER PRIMARY KEY"
+
 
 class Schema():
 
@@ -51,7 +53,7 @@ class Schema():
             file.close()
 
         for table_name, columns in schema.items():
-            columns[self.__id_column] = "INTEGER PRIMARY KEY"
+            columns[self.__id_column] = ID_COLUMN_DATATYPE
             self.add_table(table_name, columns)
 
 
@@ -70,13 +72,13 @@ class Schema():
         if table_name in self.__tables:
             raise Exception(f"Table name \"{table_name}\" already exists on tables.")
 
-        if not all(type.upper() in DATATYPES for type in columns.values()):
+        if not all(type.upper() in [*DATATYPES, ID_COLUMN_DATATYPE] for type in columns.values()):
             raise Exception("Type not found on datatypes.")
 
         for column_name, column_type in columns.items():
             self.__tables[table_name][column_name] = column_type
 
-        self.__tables[table_name][self.__id_column] = "INTEGER PRIMARY KEY"
+        self.__tables[table_name][self.__id_column] = ID_COLUMN_DATATYPE
 
 
     @typeguard.typechecked
@@ -102,6 +104,9 @@ class Schema():
 
         if column_name in self.__tables[table_name]:
             raise Exception(f"Column name \"{column_name}\" already exists on table.")
+
+        if not column_type in [*DATATYPES, ID_COLUMN_DATATYPE]:
+            raise Exception("Type not found on datatypes.")
 
         self.__tables[table_name][column_name] = column_type
 
