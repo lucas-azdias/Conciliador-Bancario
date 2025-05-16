@@ -188,8 +188,9 @@ class Database():
             # TODO No current support to write_database with an SQLite3 connection (maybe later)
             # data.write_database(table_name, self.__conn, if_table_exists = "append")
 
-            print(data.to_pandas())
-            data.to_pandas().to_sql(table_name, self.__conn, if_exists = "append")
+            pd_data = data.to_pandas()
+            pd_data.rename("index", self.__schema.id_column)
+            pd_data.to_sql(table_name, self.__conn, if_exists = "append")
 
             return self.__cursor.lastrowid
 
@@ -430,7 +431,7 @@ class Database():
                         continue
 
                     existing_type = existing_columns[column_name]
-                    if column_type != existing_type:
+                    if column_type.split(" ")[0] != existing_type:
                         raise ValueError(
                             f"Type mismatch in table \"{table_name}\", column \"{column_name}\" on database: "
                             f"expected \"{column_type}\", got \"{existing_type}\"."
