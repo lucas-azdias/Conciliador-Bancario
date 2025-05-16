@@ -151,6 +151,9 @@ class Database():
             table_name: str,
             data: typing.Dict[str, typing.Any]
         ) -> int:
+        if not table_name in self.__schema.tables():
+            raise Exception("Table name not found on schema tables.")
+
         try:
             self.__connect()
 
@@ -171,11 +174,36 @@ class Database():
 
 
     @typeguard.typechecked
+    def extend(
+            self,
+            table_name: str,
+            data: polars.DataFrame
+        ) -> int:
+        if not table_name in self.__schema.tables():
+            raise Exception("Table name not found on schema tables.")
+
+        try:
+            self.__connect()
+
+            data.write_database(table_name, self.__conn, if_table_exists = "append")
+
+            return self.__cursor.lastrowid
+
+        except sqlite3.Error as e:
+            raise Exception(f"Failed to insert record: {e}")
+
+        finally:
+            self.__close()
+
+    @typeguard.typechecked
     def read(
             self,
             table_name: str,
             conditions: typing.Optional[typing.Dict[str, typing.Any]] = None
         ) -> polars.DataFrame:
+        if not table_name in self.__schema.tables():
+            raise Exception("Table name not found on schema tables.")
+
         try:
             self.__connect()
 
@@ -210,6 +238,9 @@ class Database():
             data: typing.Dict[str, typing.Any],
             conditions: typing.Dict[str, typing.Any]
         ) -> int:
+        if not table_name in self.__schema.tables():
+            raise Exception("Table name not found on schema tables.")
+
         try:
             self.__connect()
 
@@ -236,6 +267,9 @@ class Database():
             table_name: str,
             conditions: typing.Dict[str, typing.Any]
         ) -> int:
+        if not table_name in self.__schema.tables():
+            raise Exception("Table name not found on schema tables.")
+
         try:
             self.__connect()
 
