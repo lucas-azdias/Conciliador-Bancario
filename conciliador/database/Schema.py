@@ -33,6 +33,12 @@ class Schema():
 
 
     @typeguard.typechecked
+    @property
+    def id_column(self):
+        return self.__id_column
+
+
+    @typeguard.typechecked
     def copy(self) -> typing.Self:
         return copy.deepcopy(self)
 
