@@ -1,9 +1,11 @@
 **/__pycache__/
 **/#deprecated/
 *.csv
+*.db
 /database
 /summaries
 /logs
 /in
 /out
+/archive
 /venv

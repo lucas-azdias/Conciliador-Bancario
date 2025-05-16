@@ -18,7 +18,13 @@ DATATYPES = (
 class Schema():
 
     @typeguard.typechecked
-    def __init__(self, path: typing.Optional[pathlib.Path] = None):
+    def __init__(
+        self,
+        id_column: str,
+        path: typing.Optional[pathlib.Path] = None
+    ):
+        self.__id_column = id_column
+
         self.__tables: typing.Dict[str, typing.Dict[str, str]] = collections.defaultdict(dict)
         if path:
             self.import_schema(path)
@@ -45,6 +51,7 @@ class Schema():
             file.close()
 
         for table_name, columns in schema.items():
+            columns[self.__id_column] = "INTEGER PRIMARY KEY"
             self.add_table(table_name, columns)
 
 
@@ -68,6 +75,8 @@ class Schema():
 
         for column_name, column_type in columns.items():
             self.__tables[table_name][column_name] = column_type
+
+        self.__tables[table_name][self.__id_column] = "INTEGER PRIMARY KEY"
 
 
     @typeguard.typechecked
@@ -108,6 +117,9 @@ class Schema():
 
         if not column_name in self.__tables[table_name]:
             raise Exception(f"Column name \"{column_name}\" not found on table.")
+
+        if column_name == self.__id_column:
+            raise Exception(f"Column name \"{column_name}\" is conflicting with \"id\" column.")
 
         self.__tables[table_name].pop(column_name)
 

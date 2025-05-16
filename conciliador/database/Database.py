@@ -185,7 +185,11 @@ class Database():
         try:
             self.__connect()
 
-            data.write_database(table_name, self.__conn, if_table_exists = "append")
+            # TODO No current support to write_database with an SQLite3 connection (maybe later)
+            # data.write_database(table_name, self.__conn, if_table_exists = "append")
+
+            print(data.to_pandas())
+            data.to_pandas().to_sql(table_name, self.__conn, if_exists = "append")
 
             return self.__cursor.lastrowid
 

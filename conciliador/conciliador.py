@@ -1,4 +1,5 @@
 import pathlib
+import polars
 import typeguard
 
 from . import Currency
@@ -37,9 +38,13 @@ class Conciliador():
         if can_archive:
             loader.archive_files(paths, archive, can_overwrite_archive = can_overwrite_archive)
 
+        # Check if no data was found
+        if not dataframes:
+            raise Exception("No data was found.")
+
         # Save dataframes into database
-        print(dataframes)
-        ...
+        concat_df = polars.concat(dataframes, how = "vertical")
+        print(self.__database.extend("Report", concat_df))
 
 
     @typeguard.typechecked
@@ -58,9 +63,13 @@ class Conciliador():
         if can_archive:
             loader.archive_files(paths, archive, can_overwrite_archive = can_overwrite_archive)
 
+        # Check if no data was found
+        if not dataframes:
+            raise Exception("No data was found.")
+
         # Save dataframes into database
-        print(dataframes)
-        ...
+        concat_df = polars.concat(dataframes, how = "vertical")
+        print(self.__database.extend("Statements", concat_df))
 
 
     @typeguard.typechecked
