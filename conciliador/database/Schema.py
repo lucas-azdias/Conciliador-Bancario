@@ -113,7 +113,7 @@ class Schema():
 
 
     @typeguard.typechecked
-    def tables(self) -> typing.Tuple[str]:
+    def tables(self) -> typing.Tuple[str, ...]:
         return tuple(self.__tables.keys())
 
 
