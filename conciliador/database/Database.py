@@ -189,8 +189,7 @@ class Database():
             # data.write_database(table_name, self.__conn, if_table_exists = "append")
 
             pd_data = data.to_pandas()
-            pd_data.rename("index", self.__schema.id_column)
-            pd_data.to_sql(table_name, self.__conn, if_exists = "append")
+            pd_data.to_sql(table_name, self.__conn, if_exists = "append", index = False)
 
             return self.__cursor.lastrowid
 
