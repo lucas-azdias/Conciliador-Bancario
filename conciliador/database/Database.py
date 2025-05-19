@@ -192,7 +192,7 @@ class Database():
             pd_data.to_sql(table_name, self.__conn, if_exists = "append", index = False)
 
             # Get last id (pandas.to_sql doesn't work with self.__cursor.lastrowid)
-            self.__cursor.execute(f"SELECT MAX(id) FROM {table_name}")
+            self.__cursor.execute(f"SELECT MAX({self.__schema.id_column}) FROM {table_name}")
             last_id = self.__cursor.fetchone()[0]
 
             return last_id
