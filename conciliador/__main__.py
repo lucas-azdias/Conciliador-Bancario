@@ -114,11 +114,21 @@ def main():
         help = "Currency decimals symbol (optional)"
     )
 
+    # Flag dev-mode
+    parser.add_argument(
+        "--dev-mode",
+        dest = "dev-mode",
+        action = "store_true",
+        required = False,
+        help = "Set developer mode on"
+    )
+
     # Load and parse arguments
     args = {
         key: value
         for key, value in vars(parser.parse_args()).items()
     }
+    can_archive_and_overwrite = not args["dev-mode"]
 
     # Function to clear empty values in args
     clear_empty_args: typing.Callable[[typing.Dict[str, typing.Any]], typing.Dict[str, typing.Any]] = lambda d: {
@@ -146,30 +156,30 @@ def main():
             conciliador.load_reports(
                 input = pathlib.Path(args["in-reports"]),
                 archive = pathlib.Path(args["archive-reports"]),
-                can_archive = True,
-                can_overwrite_archive = True
+                can_archive = can_archive_and_overwrite,
+                can_overwrite_archive = can_archive_and_overwrite
             )
             conciliador.load_statements(
                 input = pathlib.Path(args["in-statements"]),
                 archive = pathlib.Path(args["archive-statements"]),
-                can_archive = True,
-                can_overwrite_archive = True
+                can_archive = can_archive_and_overwrite,
+                can_overwrite_archive = can_archive_and_overwrite
             )
 
         case "load_reports":
             conciliador.load_reports(
                 input = pathlib.Path(args["in-reports"]),
                 archive = pathlib.Path(args["archive-reports"]),
-                can_archive = True,
-                can_overwrite_archive = True
+                can_archive = can_archive_and_overwrite,
+                can_overwrite_archive = can_archive_and_overwrite
             )
 
         case "load_statements":
             conciliador.load_statements(
                 input = pathlib.Path(args["in-statements"]),
                 archive = pathlib.Path(args["archive-statements"]),
-                can_archive = False,
-                can_overwrite_archive = True
+                can_archive = can_archive_and_overwrite,
+                can_overwrite_archive = can_archive_and_overwrite
             )
 
         case "compile":
