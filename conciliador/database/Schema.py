@@ -14,6 +14,10 @@ DATATYPES = (
     "BLOB",
 )
 
+DEFAULT_TABLES = (
+    "sqlite_sequence"
+)
+
 ID_COLUMN_DATATYPE = "INTEGER PRIMARY KEY AUTOINCREMENT"
 
 
@@ -81,9 +85,14 @@ class Schema():
         if not all(type.upper() in [*DATATYPES, ID_COLUMN_DATATYPE] for type in columns.values()):
             raise Exception("Type not found on datatypes.")
 
+        # Garantee id column at start
+        self.__tables[table_name][self.__id_column] = None
+
+        # Add all given columns
         for column_name, column_type in columns.items():
             self.__tables[table_name][column_name] = column_type
 
+        # Overwrite any changes to id column
         self.__tables[table_name][self.__id_column] = ID_COLUMN_DATATYPE
 
 

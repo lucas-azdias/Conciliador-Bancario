@@ -191,7 +191,11 @@ class Database():
             pd_data = data.to_pandas()
             pd_data.to_sql(table_name, self.__conn, if_exists = "append", index = False)
 
-            return self.__cursor.lastrowid
+            # Get last id (pandas.to_sql doesn't work with self.__cursor.lastrowid)
+            self.__cursor.execute(f"SELECT MAX(id) FROM {table_name}")
+            last_id = self.__cursor.fetchone()[0]
+
+            return last_id
 
         except sqlite3.Error as e:
             raise Exception(f"Failed to insert record: {e}")
@@ -447,7 +451,7 @@ class Database():
 
             # Verify if all database tables are in schema
             for table_name in existing_tables:
-                if not table_name in self.__schema.tables():
+                if not table_name in self.__schema.tables() and not table_name in Schema.DEFAULT_TABLES:
                     if not can_purge:
                         raise ValueError(f"Database table \"{table_name}\" not found on schema.")
                     query = f"DROP TABLE {table_name}"

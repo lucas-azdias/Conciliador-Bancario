@@ -168,7 +168,7 @@ def main():
             conciliador.load_statements(
                 input = pathlib.Path(args["in-statements"]),
                 archive = pathlib.Path(args["archive-statements"]),
-                can_archive = True,
+                can_archive = False,
                 can_overwrite_archive = True
             )
 
