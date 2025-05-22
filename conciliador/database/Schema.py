@@ -1,3 +1,4 @@
+import abc
 import collections
 import copy
 import json
@@ -6,29 +7,14 @@ import typeguard
 import typing
 
 
-DATATYPES = (
-    "TEXT",
-    "NUMERIC",
-    "INTEGER",
-    "REAL",
-    "BLOB",
-)
-
-DEFAULT_TABLES = (
-    "sqlite_sequence"
-)
-
-ID_COLUMN_DATATYPE = "INTEGER PRIMARY KEY AUTOINCREMENT"
-
-
-class Schema():
+class Schema(abc.ABC):
 
     @typeguard.typechecked
     def __init__(
         self,
         id_column: str,
         path: typing.Optional[pathlib.Path] = None
-    ):
+    ) -> None:
         self.__id_column = id_column
 
         self.__tables: typing.Dict[str, typing.Dict[str, str]] = collections.defaultdict(dict)
@@ -36,10 +22,28 @@ class Schema():
             self.import_schema(path)
 
 
-    @typeguard.typechecked
     @property
-    def id_column(self):
+    @typeguard.typechecked
+    def id_column(self) -> str:
         return self.__id_column
+
+
+    @property
+    @abc.abstractmethod
+    def id_datatype(self) -> str:
+        pass
+
+
+    @property
+    @abc.abstractmethod
+    def datatypes(self) -> typing.Tuple[str, ...]:
+        pass
+
+
+    @property
+    @abc.abstractmethod
+    def default_tables(self) -> typing.Tuple[str, ...]:
+        pass
 
 
     @typeguard.typechecked
@@ -63,7 +67,7 @@ class Schema():
             file.close()
 
         for table_name, columns in schema.items():
-            columns[self.__id_column] = ID_COLUMN_DATATYPE
+            columns[self.__id_column] = self.id_datatype
             self.add_table(table_name, columns)
 
 
@@ -82,7 +86,7 @@ class Schema():
         if table_name in self.__tables:
             raise Exception(f"Table name \"{table_name}\" already exists on tables.")
 
-        if not all(type.upper() in [*DATATYPES, ID_COLUMN_DATATYPE] for type in columns.values()):
+        if not all(type.upper() in [*self.datatypes, self.id_datatype] for type in columns.values()):
             raise Exception("Type not found on datatypes.")
 
         # Garantee id column at start
@@ -93,7 +97,7 @@ class Schema():
             self.__tables[table_name][column_name] = column_type
 
         # Overwrite any changes to id column
-        self.__tables[table_name][self.__id_column] = ID_COLUMN_DATATYPE
+        self.__tables[table_name][self.__id_column] = self.id_datatype
 
 
     @typeguard.typechecked
@@ -120,7 +124,7 @@ class Schema():
         if column_name in self.__tables[table_name]:
             raise Exception(f"Column name \"{column_name}\" already exists on table.")
 
-        if not column_type in [*DATATYPES, ID_COLUMN_DATATYPE]:
+        if not column_type in [*self.datatypes, self.id_datatype]:
             raise Exception("Type not found on datatypes.")
 
         self.__tables[table_name][column_name] = column_type
