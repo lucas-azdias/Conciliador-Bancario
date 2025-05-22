@@ -1,3 +1,4 @@
+import re
 import typeguard
 import typing
 
@@ -8,19 +9,21 @@ class SQLiteSchema(Schema.Schema):
 
     @property
     @typeguard.typechecked
-    def id_datatype(self) -> str:
-        return "INTEGER PRIMARY KEY AUTOINCREMENT"
+    def id_datatype(self) -> re.Pattern[str]:
+        return re.compile("INTEGER PRIMARY KEY AUTOINCREMENT")
 
 
     @property
     @typeguard.typechecked
-    def datatypes(self) -> typing.Tuple[str, ...]:
+    def datatypes(self) -> typing.Tuple[re.Pattern[str], ...]:
         return (
-            "TEXT",
-            "NUMERIC",
-            "INTEGER",
-            "REAL",
-            "BLOB",
+            re.compile(string) for string in (
+                "TEXT",
+                "NUMERIC",
+                "INTEGER",
+                "REAL",
+                "BLOB",
+            )
         )
 
 

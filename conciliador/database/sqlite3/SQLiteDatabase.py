@@ -229,7 +229,9 @@ class SQLiteDatabase(Database.Database):
                         continue
 
                     existing_type = existing_columns[column_name]
-                    if column_type.split(" ")[0] != existing_type:
+                    if column_type != existing_type or (
+                        column_name == self._schema.id_column and column_type.split(" ")[0] == existing_type
+                    ):
                         raise ValueError(
                             f"Type mismatch in table \"{table_name}\", column \"{column_name}\" on database: "
                             f"expected \"{column_type}\", got \"{existing_type}\"."
