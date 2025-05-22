@@ -3,6 +3,7 @@ import collections
 import copy
 import json
 import pathlib
+import re
 import typeguard
 import typing
 
@@ -30,13 +31,13 @@ class Schema(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def id_datatype(self) -> str:
+    def id_datatype(self) -> re.Pattern[str]:
         pass
 
 
     @property
     @abc.abstractmethod
-    def datatypes(self) -> typing.Tuple[str, ...]:
+    def datatypes(self) -> typing.Tuple[re.Pattern[str], ...]:
         pass
 
 
@@ -72,6 +73,16 @@ class Schema(abc.ABC):
 
 
     @typeguard.typechecked
+    def contains_datatype(
+        self,
+        datatype: str
+    ) -> bool:
+        return any(
+            pattern.match(datatype) for pattern in self.datatypes
+        ) or self.id_datatype.match(datatype)
+
+
+    @typeguard.typechecked
     def add_table(
             self,
             table_name: str,
@@ -86,8 +97,8 @@ class Schema(abc.ABC):
         if table_name in self.__tables:
             raise Exception(f"Table name \"{table_name}\" already exists on tables.")
 
-        if not all(type.upper() in [*self.datatypes, self.id_datatype] for type in columns.values()):
-            raise Exception("Type not found on datatypes.")
+        if not all(self.contains_datatype(type) for type in columns.values()):
+            raise Exception("Type did not match anyone on datatypes.")
 
         # Garantee id column at start
         self.__tables[table_name][self.__id_column] = None
@@ -124,8 +135,8 @@ class Schema(abc.ABC):
         if column_name in self.__tables[table_name]:
             raise Exception(f"Column name \"{column_name}\" already exists on table.")
 
-        if not column_type in [*self.datatypes, self.id_datatype]:
-            raise Exception("Type not found on datatypes.")
+        if not self.contains_datatype(column_type):
+            raise Exception("Type did not match anyone on datatypes.")
 
         self.__tables[table_name][column_name] = column_type
 
