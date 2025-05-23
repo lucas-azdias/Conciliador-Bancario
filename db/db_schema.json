@@ -25,5 +25,40 @@
         "year": "INTEGER",
         "name": "TEXT",
         "value": "INTEGER"
+    },
+
+
+    "Summary": {
+        "day": "INTEGER",
+        "month": "INTEGER",
+        "year": "INTEGER",
+        "statement_data_id": "INTEGER",
+        "report_data_id": "INTEGER"
+    },
+
+    "ReportData": {
+        "report_id": "INTEGER",
+        "pix": "INTEGER",
+        "transferencia": "INTEGER"
+    },
+
+    "Deposit": {
+        "report_data_id": "INTEGER",
+        "value": "INTEGER"
+    },
+
+    "Card": {
+        "report_data_id": "INTEGER",
+        "is_credit": "",
+        "is_prepaid": "",
+        "value": "INTEGER"
+    },
+
+    "StatementData": {
+        "statement_id": "INTEGER",
+        "month": "INTEGER",
+        "year": "INTEGER",
+        "name": "TEXT",
+        "value": "INTEGER"
     }
 }
