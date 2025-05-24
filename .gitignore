@@ -2,6 +2,7 @@
 **/#deprecated/
 *.csv
 *.db
+/db
 /database
 /summaries
 /logs
@@ -9,3 +10,4 @@
 /out
 /archive
 /.venv
+*.env
