@@ -3,7 +3,7 @@ import polars
 import typeguard
 
 from . import Currency
-from .database import Database, Schema
+from .database import Database
 from .loaders import ReportLoader, StatementLoader
 
 
@@ -12,13 +12,12 @@ class Conciliador():
     @typeguard.typechecked
     def __init__(
             self,
-            db_schema_path: pathlib.Path = pathlib.Path("db/db_schema.json"),
-            database_path: pathlib.Path = pathlib.Path("db/database.db"),
+            database_uri: str,
             currency: str = "USD",
             thousands: str = ",",
             decimals: str = "."
         ) -> None:
-        self.__database: Database.Database = Database.Database(Schema.Schema("id", path = db_schema_path), database_path = database_path, can_load_schema = True)
+        self.__database: Database.Database = Database.Database(database_uri = database_uri)
         self.__currency: Currency.Currency = Currency.Currency(currency, thousands = thousands, decimals = decimals)
 
 
@@ -80,7 +79,7 @@ class Conciliador():
         ).unique()
 
         # Extend database with reports and recover ids
-        report_last_row = self.__database.extend("Report", reports_df)
+        report_last_row = self.__database.extend("report", reports_df)
         reports_df = reports_df.with_columns([
             (polars.Series(name = "id", values = [report_last_row - (reports_df.height - i - 1) for i in range(reports_df.height)]))
         ])
@@ -102,7 +101,7 @@ class Conciliador():
         )
 
         # Extend database with finishers
-        self.__database.extend("Finisher", finishers_df)
+        self.__database.extend("finisher", finishers_df)
 
 
     @typeguard.typechecked
@@ -138,7 +137,8 @@ class Conciliador():
         )
 
         # Save dataframes into database
-        self.__database.extend("Statement", statements_df)
+        self.__database.extend("statement", statements_df)
+        print(self.__database.read("statement"))
 
 
     @typeguard.typechecked

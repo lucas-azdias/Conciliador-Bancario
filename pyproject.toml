@@ -15,7 +15,7 @@ dependencies = [
     "python-dotenv (>=1.1.0,<2.0.0)",
     "pyarrow (>=20.0.0,<21.0.0)",
     "pandas (>=2.2.3,<3.0.0)",
-    "firebird-driver (>=2.0.2,<3.0.0)",
+    "sqlalchemy (>=2.0.41,<3.0.0)",
 ]
 
 

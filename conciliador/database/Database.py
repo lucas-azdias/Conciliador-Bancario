@@ -1,149 +1,64 @@
-import abc
-import pathlib
 import polars
+import sqlalchemy
+import sqlalchemy.exc
+import sqlalchemy.orm
 import typeguard
 import typing
 
-from . import Schema
+from . import BaseModel
+from .models import * # Build all ORM models into Base.metadata
 
 
-class Database(abc.ABC):
+class Database():
 
     @typeguard.typechecked
     def __init__(
             self,
-            schema: Schema.Schema,
-            database_path: typing.Optional[pathlib.Path] = None,
-            can_load_schema: bool = False, # Enables add tables/columns from schema to the database
-            can_purge: bool = False # Enables purge tables/columns from database based on schema
+            database_uri: str,
+            can_fill: bool = True,
+            can_purge: bool = False
         ) -> None:
-        self._schema: Schema.Schema = schema
-        self._database_path: typing.Optional[pathlib.Path] = database_path.absolute() if database_path else None
+        self.__engine: sqlalchemy.Engine = sqlalchemy.create_engine(database_uri)
+        self.__db_metadata: sqlalchemy.MetaData = sqlalchemy.MetaData()
+        self.__orm_metadata: sqlalchemy.MetaData = BaseModel.BaseModel.metadata
+        self.__sessionmaker = sqlalchemy.orm.sessionmaker(bind = self.__engine)
+        self.__inspector: sqlalchemy.Inspector = sqlalchemy.inspect(self.__engine)
 
-        # Create database storage file if not created 
-        self._connect()
-        self._close()
+        # Load schema from database
+        self.__db_metadata.reflect(bind = self.__engine)
 
-        # Validates schema
-        self._validate_schema(can_load_schema = can_load_schema, can_purge = can_purge)
+        # Validate schema from database and schema defined via ORM
+        self.sync_schema(can_fill = can_fill, can_purge = can_purge, should_raise_permission_errors = True)
 
-
-    @typeguard.typechecked
-    def create_table(
-            self,
-            table_name: str,
-            columns: typing.Dict[str, str]
-        ) -> None:
-        if table_name in self._schema.tables():
-            raise Exception("Table name already exists on schema tables.")
-
-        try:
-            self._connect()
-            self._create_table(table_name, columns)
-
-        except Exception as e:
-            raise Exception(f"Failed to create table: {e}")
-
-        else:
-            self._schema.add_table(table_name, columns)
-
-        finally:
-            self._close()
-
-
-    @typeguard.typechecked
-    def drop_table(
-            self,
-            table_name: str
-        ) -> None:
-        if not table_name in self._schema.tables():
-            raise Exception("Table name not found on schema tables.")
-
-        try:
-            self._connect()
-            self._drop_table(table_name)
-
-        except Exception as e:
-            raise Exception(f"Failed to create table: {e}")
-
-        else:
-            self._schema.remove_table(table_name)
-
-        finally:
-            self._close()
-
-
-    @typeguard.typechecked
-    def add_column(
-            self,
-            table_name: str,
-            column_name: str,
-            column_type: str
-        ) -> None:
-        if not table_name in self._schema.tables():
-            raise Exception("Table name not found on schema tables.")
-
-        if column_name in self._schema.columns(table_name):
-            raise Exception("Column name already exists on schema table.")
-
-        try:
-            self._connect()
-            self._add_column(table_name, column_name, column_type)
-
-        except Exception as e:
-            raise Exception(f"Failed to add column to table: {e}")
-
-        else:
-            self._schema.add_column(table_name, column_name, column_type)
-
-        finally:
-            self._close()
-
-
-    @typeguard.typechecked
-    def drop_column(
-            self,
-            table_name: str,
-            column_name: str
-        ) -> None:
-        if not table_name in self._schema.tables():
-            raise Exception("Table name not found on schema tables.")
-
-        if not column_name in self._schema.columns(table_name):
-            raise Exception("Column name not found on schema table.")
-
-        try:
-            self._connect()
-            self._drop_column(table_name, column_name)
-
-        except Exception as e:
-            raise Exception(f"Failed to drop column from table: {e}")
-
-        else:
-            self._schema.remove_column(table_name, column_name)
-
-        finally:
-            self._close()
+        # Update elements after sync
+        self.__inspector: sqlalchemy.Inspector = sqlalchemy.inspect(self.__engine)
+        self.__db_metadata.reflect(bind = self.__engine)
 
 
     @typeguard.typechecked
     def insert(
             self,
             table_name: str,
-            data: typing.Dict[str, typing.Any]
+            **data: typing.Dict[str, typing.Any]
         ) -> int:
-        if not table_name in self._schema.tables():
+        if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
-        try:
-            self._connect()
-            return self._insert(table_name, data)
+        with self.__sessionmaker() as session:
+            try:
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                query: sqlalchemy.Insert = sqlalchemy.insert(table).values(**data)
+                result: sqlalchemy.CursorResult = session.execute(query)
+                session.commit()
 
-        except Exception as e:
-            raise Exception(f"Failed to insert record: {e}")
+                return result.inserted_primary_key[0] if result.inserted_primary_key else -1
 
-        finally:
-            self._close()
+            except sqlalchemy.exc.SQLAlchemyError as e:
+                session.rollback()
+                raise Exception(f"Failed to insert record: {e}")
+
+            finally:
+                session.close()
 
 
     @typeguard.typechecked
@@ -151,39 +66,69 @@ class Database(abc.ABC):
             self,
             table_name: str,
             data: polars.DataFrame
-        ) -> int:
-        if not table_name in self._schema.tables():
+        ) -> typing.Tuple[int, int]:
+        if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
-        try:
-            self._connect()
-            return self._extend(table_name, data)
+        with self.__sessionmaker() as session:
+            try:
+                rows_affected: int = data.write_database(
+                    table_name,
+                    self.__engine,
+                    if_table_exists = "append",
+                    engine = "sqlalchemy"
+                )
 
-        except Exception as e:
-            raise Exception(f"Failed to insert record: {e}")
+                # Get last inserted id
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                pk_col: sqlalchemy.Column = list(table.primary_key.columns)[0]
+                query: sqlalchemy.Select = sqlalchemy.select(sqlalchemy.func.max(pk_col))
+                last_id: int = session.execute(query).scalar_one_or_none()
 
-        finally:
-            self._close()
+                return (rows_affected, last_id if last_id else -1)
+
+            except sqlalchemy.exc.SQLAlchemyError as e:
+                session.rollback()
+                raise Exception(f"Failed to extend table: {e}")
+
+            finally:
+                session.close()
 
 
     @typeguard.typechecked
     def read(
             self,
             table_name: str,
-            conditions: typing.Optional[typing.Dict[str, typing.Any]] = None
+            **conditions: typing.Optional[typing.Dict[str, typing.Any]]
         ) -> polars.DataFrame:
-        if not table_name in self._schema.tables():
+        if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
-        try:
-            self._connect()
-            return self._read(table_name, conditions)
+        with self.__sessionmaker() as session:
+            try:
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                query: sqlalchemy.Select = sqlalchemy.select(table)
 
-        except Exception as e:
-            raise Exception(f"Failed to read records: {e}")
+                if conditions:
+                    query.where(
+                        sqlalchemy.and_(
+                            *[table.c[k] == v for k, v in conditions.items()]
+                        )
+                    )
 
-        finally:
-            self._close()
+                fetched: polars.DataFrame = polars.read_database(
+                    query = str(query.compile(self.__engine, compile_kwargs = {"literal_binds": True})),
+                    connection = self.__engine
+                )
+
+                return fetched
+
+            except sqlalchemy.exc.SQLAlchemyError as e:
+                session.rollback()
+                raise Exception(f"Failed to read records: {e}")
+
+            finally:
+                session.close()
 
 
     @typeguard.typechecked
@@ -191,155 +136,131 @@ class Database(abc.ABC):
             self,
             table_name: str,
             data: typing.Dict[str, typing.Any],
-            conditions: typing.Dict[str, typing.Any]
+            **conditions: typing.Dict[str, typing.Any]
         ) -> int:
-        if not table_name in self._schema.tables():
+        if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
-        try:
-            self._connect()
-            return self._update(table_name, data, conditions)
+        with self.__sessionmaker() as session:
+            try:
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                query: sqlalchemy.Update = (
+                    sqlalchemy.update(table)
+                    .where(sqlalchemy.and_(*[table.c[k] == v for k, v in conditions.items()]))
+                    .values(**data)
+                )
+                result: sqlalchemy.CursorResult = session.execute(query)
+                session.commit()
 
-        except Exception as e:
-            raise Exception(f"Failed to update records: {e}")
+                return result.rowcount
 
-        finally:
-            self._close()
+            except sqlalchemy.exc.SQLAlchemyError as e:
+                session.rollback()
+                raise Exception(f"Failed to update records: {e}")
+
+            finally:
+                session.close()
 
 
     @typeguard.typechecked
     def delete(
             self,
             table_name: str,
-            conditions: typing.Dict[str, typing.Any]
+            **conditions: typing.Dict[str, typing.Any]
         ) -> int:
-        if not table_name in self._schema.tables():
+        if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
-        try:
-            self._connect()
-            return self._delete(table_name, conditions)
+        with self.__sessionmaker() as session:
+            try:
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                query: sqlalchemy.Delete = (
+                    sqlalchemy.delete(table)
+                    .where(sqlalchemy.and_(*[table.c[k] == v for k, v in conditions.items()]))
+                )
+                result: sqlalchemy.CursorResult = session.execute(query)
+                session.commit()
 
-        except Exception as e:
-            raise Exception(f"Failed to delete records: {e}")
+                return result.rowcount
 
-        finally:
-            self._close()
+            except sqlalchemy.exc.SQLAlchemyError as e:
+                session.rollback()
+                raise Exception(f"Failed to delete records: {e}")
+
+            finally:
+                session.close()
+
+
+    def has_table(
+            self,
+            table_name: str
+        ) -> bool:
+        return table_name in self.__inspector.get_table_names()
 
 
     @typeguard.typechecked
-    def validate_schema(
+    def sync_schema(
             self,
-            can_load_schema: bool = False,
-            can_purge: bool = False
+            can_fill: bool = False,
+            can_purge: bool = False,
+            should_raise_permission_errors: bool = False
         ) -> None:
-        try:
-            self._connect()
-            self._validate_schema(can_load_schema = can_load_schema, can_purge = can_purge)
+        db_tables: typing.List[str] = self.__inspector.get_table_names()
+        orm_tables: typing.List[str] = list(self.__orm_metadata.tables.keys())
 
-        except Exception as e:
-            raise Exception(f"Failed to validate database schema: {e}")
+        # Handle table creation
+        tables_to_create: typing.List[str] = [table for table in orm_tables if table not in db_tables]
+        if tables_to_create and not can_fill and should_raise_permission_errors:
+            raise PermissionError("Not able to create missing tables: \"fill\" permission not granted.")
 
-        finally:
-            self._close()
+        if tables_to_create and can_fill:
+            try:
+                for table_name in tables_to_create:
+                    self.__orm_metadata.tables[table_name].create(self.__engine)
+            except sqlalchemy.exc.SQLAlchemyError as e:
+                raise Exception(f"Failed to create tables: {str(e)}")
 
+        # Handle table purging
+        tables_to_purge: typing.List[str] = [table for table in db_tables if table not in orm_tables]
+        if tables_to_purge and not can_purge and should_raise_permission_errors:
+            raise PermissionError("Not able to purge extra tables: \"purge\" permission not granted.")
 
-    @abc.abstractmethod
-    def _connect(self) -> None:
-        pass
+        if tables_to_purge and can_purge:
+            try:
+                for table_name in tables_to_purge:
+                    self.__db_metadata.tables[table_name].drop(self.__engine)
+            except sqlalchemy.exc.SQLAlchemyError as e:
+                raise Exception(f"Failed to purge tables: {str(e)}")
 
+        # Handle column synchronization for common tables
+        common_tables: typing.List[str] = [table for table in db_tables if table in orm_tables]
+        for table_name in common_tables:
+            db_columns: typing.List[str] = [col["name"] for col in self.__inspector.get_columns(table_name)]
+            orm_columns: typing.List[str] = list(self.__orm_metadata.tables[table_name].c.keys())
 
-    @abc.abstractmethod
-    def _close(self) -> None:
-        pass
+            # Handle column creation
+            columns_to_create: typing.List[str] = [col for col in orm_columns if col not in db_columns]
+            if columns_to_create and not can_fill and should_raise_permission_errors:
+                raise PermissionError(f"Not able to create missing columns in table \"{table_name}\": \"fill\" permission not granted.")
 
+            if columns_to_create and can_fill:
+                try:
+                    for column_name in columns_to_create:
+                        column: sqlalchemy.Column = self.__orm_metadata.tables[table_name].c[column_name]
+                        with self.__engine.connect() as conn:
+                            conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column.type};")
+                except sqlalchemy.exc.SQLAlchemyError as e:
+                    raise Exception(f"Failed to create columns in table \"{table_name}\": {str(e)}")
 
-    @abc.abstractmethod
-    def _create_table(
-            self,
-            table_name: str,
-            columns: typing.Dict[str, str]
-        ) -> None:
-        pass
+            # Handle column purging
+            columns_to_purge: typing.List[str] = [col for col in db_columns if col not in orm_columns]
+            if columns_to_purge and not can_purge and should_raise_permission_errors:
+                raise PermissionError(f"Not able to purge extra columns in table \"{table_name}\": \"purge\" permission not granted.")
 
-
-    @abc.abstractmethod
-    def _drop_table(
-            self,
-            table_name: str
-        ) -> None:
-        pass
-
-
-    @abc.abstractmethod
-    def _add_column(
-            self,
-            table_name: str,
-            column_name: str,
-            column_type: str
-        ) -> None:
-        pass
-
-
-    @abc.abstractmethod
-    def _drop_column(
-            self,
-            table_name: str,
-            column_name: str
-        ) -> None:
-        pass
-
-
-    @abc.abstractmethod
-    def _insert(
-            self,
-            table_name: str,
-            data: typing.Dict[str, typing.Any]
-        ) -> int:
-        pass
-
-
-    @abc.abstractmethod
-    def _extend(
-            self,
-            table_name: str,
-            data: polars.DataFrame
-        ) -> int:
-        pass
-
-
-    @abc.abstractmethod
-    def _read(
-            self,
-            table_name: str,
-            conditions: typing.Optional[typing.Dict[str, typing.Any]] = None
-        ) -> polars.DataFrame:
-        pass
-
-
-    @abc.abstractmethod
-    def _update(
-            self,
-            table_name: str,
-            data: typing.Dict[str, typing.Any],
-            conditions: typing.Dict[str, typing.Any]
-        ) -> int:
-        pass
-
-
-    @abc.abstractmethod
-    def _delete(
-            self,
-            table_name: str,
-            conditions: typing.Dict[str, typing.Any]
-        ) -> int:
-        pass
-
-
-    @abc.abstractmethod
-    def _validate_schema(
-            self,
-            can_load_schema: bool,
-            can_purge: bool
-        ) -> None:
-        pass
+            if columns_to_purge and can_purge:
+                try:
+                    for column_name in columns_to_purge:
+                        with self.__engine.connect() as conn:
+                            conn.execute(f"ALTER TABLE {table_name} DROP COLUMN {column_name};")
+                except sqlalchemy.exc.SQLAlchemyError as e:
+                    raise Exception(f"Failed to purge columns in table \"{table_name}\": {str(e)}")

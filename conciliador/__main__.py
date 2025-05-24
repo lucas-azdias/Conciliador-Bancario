@@ -28,7 +28,7 @@ def main():
     parser.add_argument(
         "--in-reports",
         dest = "in-reports",
-        default = "in/reports",
+        default = os.getenv("IN_REPORTS") or "in/reports",
         required = False,
         help = "Input reports file/folder path (optional)"
     )
@@ -37,7 +37,7 @@ def main():
     parser.add_argument(
         "--in-statements",
         dest = "in-statements",
-        default = "in/statements",
+        default = os.getenv("IN_STATEMENTS") or "in/statements",
         required = False,
         help = "Input statements file/folder path (optional)"
     )
@@ -46,7 +46,7 @@ def main():
     parser.add_argument(
         "--output",
         dest = "output",
-        default = "out",
+        default = os.getenv("OUTPUT") or "out",
         required = False,
         help = "output folder path (optional)"
     )
@@ -55,7 +55,7 @@ def main():
     parser.add_argument(
         "--archive-reports",
         dest = "archive-reports",
-        default = "archive/reports",
+        default = os.getenv("ARCHIVE_REPORTS") or "archive/reports",
         required = False,
         help = "Reports archive folder path (optional)"
     )
@@ -69,25 +69,16 @@ def main():
         help = "Statements archive folder path (optional)"
     )
 
-    # Optional db_schema_path (default in .env)
+    # Optional database URI
     parser.add_argument(
-        "--db-schema-path",
-        dest = "db-schema-path",
-        default = os.getenv("DB_SCHEMA_PATH"),
-        required = False,
-        help = "Database schema file path (optional)"
-    )
-
-    # Optional database_path (default in .env)
-    parser.add_argument(
-        "--database-path",
-        dest = "database-path",
-        default = os.getenv("DATABASE_PATH"),
+        "--database-uri",
+        dest = "database-uri",
+        default = os.getenv("DATABASE_URI") or "sqlite:///:memory:",
         required = False,
         help = "Database file path (optional)"
     )
 
-    # Optional currency (default in .env)
+    # Optional currency
     parser.add_argument(
         "--currency",
         dest = "currency",
@@ -96,7 +87,7 @@ def main():
         help = "Currency (optional)"
     )
 
-    # Optional thousands (default in .env)
+    # Optional thousands
     parser.add_argument(
         "--thousands",
         dest = "thousands",
@@ -105,7 +96,7 @@ def main():
         help = "Currency thousands symbol (optional)"
     )
 
-    # Optional decimals (default in .env)
+    # Optional decimals
     parser.add_argument(
         "--decimals",
         dest = "decimals",
@@ -119,6 +110,7 @@ def main():
         "--dev-mode",
         dest = "dev-mode",
         action = "store_true",
+        default = (os.getenv("DEV_MODE", "False").lower() in {"1", "true", "yes", "on"}),
         required = False,
         help = "Set developer mode on"
     )
@@ -141,8 +133,7 @@ def main():
     conciliador = Conciliador.Conciliador(
         **clear_empty_args(
             {
-                "db_schema_path": pathlib.Path(args["db-schema-path"]),
-                "database_path": pathlib.Path(args["database-path"]),
+                "database_uri": args["database-uri"],
                 "currency": args["currency"],
                 "thousands": args["thousands"],
                 "decimals": args["decimals"],
