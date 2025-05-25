@@ -16,9 +16,10 @@ class Database():
             self,
             database_uri: str,
             can_fill: bool = True,
-            can_purge: bool = False
+            can_purge: bool = False,
+            has_dev_mode: bool = False
         ) -> None:
-        self.__engine: sqlalchemy.Engine = sqlalchemy.create_engine(database_uri)
+        self.__engine: sqlalchemy.Engine = sqlalchemy.create_engine(database_uri, echo = has_dev_mode)
         self.__db_metadata: sqlalchemy.MetaData = sqlalchemy.MetaData()
         self.__orm_metadata: sqlalchemy.MetaData = BaseModel.BaseModel.metadata
         self.__sessionmaker = sqlalchemy.orm.sessionmaker(bind = self.__engine)
@@ -211,7 +212,7 @@ class Database():
         # Handle table creation
         tables_to_create: typing.List[str] = [table for table in orm_tables if table not in db_tables]
         if tables_to_create and not can_fill and should_raise_permission_errors:
-            raise PermissionError("Not able to create missing tables: \"fill\" permission not granted.")
+            raise PermissionError(f"Not able to create missing tables (\"fill\" permission not granted): {', '.join(tables_to_create)}.")
 
         if tables_to_create and can_fill:
             try:
@@ -223,7 +224,7 @@ class Database():
         # Handle table purging
         tables_to_purge: typing.List[str] = [table for table in db_tables if table not in orm_tables]
         if tables_to_purge and not can_purge and should_raise_permission_errors:
-            raise PermissionError("Not able to purge extra tables: \"purge\" permission not granted.")
+            raise PermissionError(f"Not able to purge extra tables (\"purge\" permission not granted): {', '.join(tables_to_purge)}.")
 
         if tables_to_purge and can_purge:
             try:
@@ -241,7 +242,7 @@ class Database():
             # Handle column creation
             columns_to_create: typing.List[str] = [col for col in orm_columns if col not in db_columns]
             if columns_to_create and not can_fill and should_raise_permission_errors:
-                raise PermissionError(f"Not able to create missing columns in table \"{table_name}\": \"fill\" permission not granted.")
+                raise PermissionError(f"Not able to create missing columns in table \"{table_name}\" (\"fill\" permission not granted): {', '.join(columns_to_create)}.")
 
             if columns_to_create and can_fill:
                 try:
@@ -255,7 +256,7 @@ class Database():
             # Handle column purging
             columns_to_purge: typing.List[str] = [col for col in db_columns if col not in orm_columns]
             if columns_to_purge and not can_purge and should_raise_permission_errors:
-                raise PermissionError(f"Not able to purge extra columns in table \"{table_name}\": \"purge\" permission not granted.")
+                raise PermissionError(f"Not able to purge extra columns in table \"{table_name}\" (\"purge\" permission not granted): {', '.join(columns_to_purge)}.")
 
             if columns_to_purge and can_purge:
                 try:

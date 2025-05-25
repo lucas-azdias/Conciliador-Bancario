@@ -15,9 +15,10 @@ class Conciliador():
             database_uri: str,
             currency: str = "USD",
             thousands: str = ",",
-            decimals: str = "."
+            decimals: str = ".",
+            has_dev_mode: bool = False
         ) -> None:
-        self.__database: Database.Database = Database.Database(database_uri = database_uri)
+        self.__database: Database.Database = Database.Database(database_uri = database_uri, has_dev_mode = has_dev_mode)
         self.__currency: Currency.Currency = Currency.Currency(currency, thousands = thousands, decimals = decimals)
 
 

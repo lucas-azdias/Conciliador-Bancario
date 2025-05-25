@@ -137,6 +137,7 @@ def main():
                 "currency": args["currency"],
                 "thousands": args["thousands"],
                 "decimals": args["decimals"],
+                "has_dev_mode": args["dev-mode"]
             }
         )
     )
