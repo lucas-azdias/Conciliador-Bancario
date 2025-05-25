@@ -45,43 +45,29 @@ class Conciliador():
         concat_df = polars.concat(dataframes, how = "vertical")
         concat_df = concat_df.select(
             [
-                polars.col("Data").str.strptime(polars.Date, "%d/%m/%Y").dt.day().cast(polars.Int64).alias("day"),
-                polars.col("Data").str.strptime(polars.Date, "%d/%m/%Y").dt.month().cast(polars.Int64).alias("month"),
-                polars.col("Data").str.strptime(polars.Date, "%d/%m/%Y").dt.year().cast(polars.Int64).alias("year"),
                 polars.col("Turno").cast(polars.Int64).alias("shift"),
                 polars.col("Funcionário").cast(polars.String).alias("employee"),
-                polars.col("Início").str.strptime(polars.Time, "%H:%M:%S").dt.hour().cast(polars.Int64).alias("start_hour"),
-                polars.col("Início").str.strptime(polars.Time, "%H:%M:%S").dt.minute().cast(polars.Int64).alias("start_min"),
-                polars.col("Início").str.strptime(polars.Time, "%H:%M:%S").dt.second().cast(polars.Int64).alias("start_sec"),
-                polars.col("Término").str.strptime(polars.Time, "%H:%M:%S").dt.hour().cast(polars.Int64).alias("end_hour"),
-                polars.col("Término").str.strptime(polars.Time, "%H:%M:%S").dt.minute().cast(polars.Int64).alias("end_min"),
-                polars.col("Término").str.strptime(polars.Time, "%H:%M:%S").dt.second().cast(polars.Int64).alias("end_sec"),
+                polars.concat_str([polars.col("Data"), polars.lit(" "), polars.col("Início")]).str.strptime(polars.Datetime, "%d/%m/%Y %H:%M:%S").alias("start_time"),
+                polars.concat_str([polars.col("Data"), polars.lit(" "), polars.col("Término")]).str.strptime(polars.Datetime, "%d/%m/%Y %H:%M:%S").alias("end_time"),
                 polars.col("Finalizadora").cast(polars.String).alias("name"),
-                polars.col("Total").str.replace_all(r"[,.]", "").cast(polars.Int64).alias("value")
+                polars.col("Total").str.replace_all(r"[,.]", "").cast(polars.Int64).alias("value"),
             ]
         )
 
         # Create reports dataframe
         reports_df = concat_df.select(
             [
-                polars.col("day").alias("day"),
-                polars.col("month").alias("month"),
-                polars.col("year").alias("year"),
                 polars.col("shift").alias("shift"),
                 polars.col("employee").alias("employee"),
-                polars.col("start_hour").alias("start_hour"),
-                polars.col("start_min").alias("start_min"),
-                polars.col("start_sec").alias("start_sec"),
-                polars.col("end_hour").alias("end_hour"),
-                polars.col("end_min").alias("end_min"),
-                polars.col("end_sec").alias("end_sec"),
+                polars.col("start_time").alias("start_time"),
+                polars.col("end_time").alias("end_time"),
             ]
         ).unique()
 
         # Extend database with reports and recover ids
-        report_last_row = self.__database.extend("report", reports_df)
+        _, last_id = self.__database.extend("report", reports_df)
         reports_df = reports_df.with_columns([
-            (polars.Series(name = "id", values = [report_last_row - (reports_df.height - i - 1) for i in range(reports_df.height)]))
+            (polars.Series(name = "id", values = [last_id - (reports_df.height - i - 1) for i in range(reports_df.height)]))
         ])
 
         # Link reports to finishers with recovered id
@@ -128,9 +114,7 @@ class Conciliador():
         statements_df = polars.concat(dataframes, how = "vertical")
         statements_df = statements_df.select(
             [
-                polars.col("Data").str.strptime(polars.Date, "%d/%m/%Y").dt.day().cast(polars.Int64).alias("day"),
-                polars.col("Data").str.strptime(polars.Date, "%d/%m/%Y").dt.month().cast(polars.Int64).alias("month"),
-                polars.col("Data").str.strptime(polars.Date, "%d/%m/%Y").dt.year().cast(polars.Int64).alias("year"),
+                polars.col("Data").str.strptime(polars.Date, "%d/%m/%Y").alias("date"),
                 polars.col("Histórico").cast(polars.String).alias("name"),
                 polars.col("Valor").str.replace_all(r"[,.]", "").cast(polars.Int64).alias("value")
             ]
@@ -138,7 +122,6 @@ class Conciliador():
 
         # Save dataframes into database
         self.__database.extend("statement", statements_df)
-        print(self.__database.read("statement"))
 
 
     @typeguard.typechecked
