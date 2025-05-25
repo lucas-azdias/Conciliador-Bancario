@@ -27,7 +27,7 @@ class Report(BaseModel.BaseModel):
         back_populates = "report",
         cascade = "all, delete-orphan"
     )
-    report_datas: sqlalchemy.orm.Mapped[typing.List["ReportData"]] = sqlalchemy.orm.relationship( # type: ignore
+    daily_report_datas: sqlalchemy.orm.Mapped[typing.List["DailyReportData"]] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "report",
         cascade = "all, delete-orphan"
     )

@@ -16,12 +16,12 @@ class Deposit(BaseModel.BaseModel):
         nullable = False,
         autoincrement = True
     )
-    report_data_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
-        sqlalchemy.ForeignKey("report_data.id")
+    daily_report_data_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.ForeignKey("daily_report_data.id")
     )
     value: sqlalchemy.orm.Mapped[int]
 
     # Relationships
-    report_datas: sqlalchemy.orm.Mapped[typing.List["ReportData"]] = sqlalchemy.orm.relationship( # type: ignore
+    daily_report_datas: sqlalchemy.orm.Mapped[typing.List["ReportData"]] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "deposit"
     )

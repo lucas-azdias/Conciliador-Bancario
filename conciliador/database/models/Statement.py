@@ -22,7 +22,7 @@ class Statement(BaseModel.BaseModel):
     value: sqlalchemy.orm.Mapped[int]
 
     # Relationships
-    statement_datas: sqlalchemy.orm.Mapped[typing.List["StatementData"]] = sqlalchemy.orm.relationship( # type: ignore
+    daily_bank_datas: sqlalchemy.orm.Mapped[typing.List["DailyBankData"]] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "statement",
         cascade = "all, delete-orphan"
     )

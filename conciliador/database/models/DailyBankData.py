@@ -6,10 +6,10 @@ import typing
 from .. import BaseModel
 
 
-class StatementData(BaseModel.BaseModel):
+class DailyBankData(BaseModel.BaseModel):
 
     # Table name
-    __tablename__ = "statement_data"
+    __tablename__ = "daily_bank_data"
 
     # Columns
     id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
@@ -26,8 +26,8 @@ class StatementData(BaseModel.BaseModel):
 
     # Relationships
     statements: sqlalchemy.orm.Mapped[typing.List["Statement"]] = sqlalchemy.orm.relationship( # type: ignore
-        back_populates = "statement_data"
+        back_populates = "daily_bank_data"
     )
-    summaries: sqlalchemy.orm.Mapped[typing.List["Summary"]] = sqlalchemy.orm.relationship( # type: ignore
-        back_populates = "statement_data"
+    daily_datas: sqlalchemy.orm.Mapped[typing.List["DailyData"]] = sqlalchemy.orm.relationship( # type: ignore
+        back_populates = "daily_bank_data"
     )
