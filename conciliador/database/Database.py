@@ -39,10 +39,13 @@ class Database():
     def insert(
             self,
             table_name: BaseModel.BaseModel | str,
-            **data: typing.Optional[typing.Dict[str, typing.Any]]
+            data: typing.Dict[str, typing.Any]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
+
+        if not data:
+            raise Exception("Missing data to insert on table.")
 
         with self.__sessionmaker() as session:
             try:
@@ -70,6 +73,9 @@ class Database():
         ) -> typing.Tuple[int, int]:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
+
+        if data.is_empty():
+            raise Exception("Missing data to extend table.")
 
         with self.__sessionmaker() as session:
             try:
@@ -101,7 +107,7 @@ class Database():
     def read(
             self,
             table_name: BaseModel.BaseModel | str,
-            **conditions: typing.Optional[typing.Dict[str, typing.Any]]
+            **conditions: typing.Callable[[sqlalchemy.Column], bool]
         ) -> polars.DataFrame:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
@@ -116,7 +122,7 @@ class Database():
                 if conditions:
                     query.where(
                         sqlalchemy.and_(
-                            *[table.c[k] == v for k, v in conditions.items()]
+                            *[v(table.c[k]) for k, v in conditions.items()]
                         )
                     )
 
@@ -139,10 +145,13 @@ class Database():
             self,
             table_name: BaseModel.BaseModel | str,
             data: typing.Dict[str, typing.Any],
-            **conditions: typing.Optional[typing.Dict[str, typing.Any]]
+            **conditions: typing.Callable[[sqlalchemy.Column], bool]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
+
+        if not data:
+            raise Exception("Missing data to update table.")
 
         with self.__sessionmaker() as session:
             try:
@@ -151,7 +160,11 @@ class Database():
                 )
                 query: sqlalchemy.Update = (
                     sqlalchemy.update(table)
-                    .where(sqlalchemy.and_(*[table.c[k] == v for k, v in conditions.items()]))
+                    .where(
+                        sqlalchemy.and_(
+                            *[v(table.c[k]) for k, v in conditions.items()]
+                        )
+                    )
                     .values(**data)
                 )
                 result: sqlalchemy.CursorResult = session.execute(query)
@@ -170,7 +183,7 @@ class Database():
     def delete(
             self,
             table_name: BaseModel.BaseModel | str,
-            **conditions: typing.Optional[typing.Dict[str, typing.Any]]
+            **conditions: typing.Callable[[sqlalchemy.Column], bool]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
@@ -182,7 +195,11 @@ class Database():
                 )
                 query: sqlalchemy.Delete = (
                     sqlalchemy.delete(table)
-                    .where(sqlalchemy.and_(*[table.c[k] == v for k, v in conditions.items()]))
+                    .where(
+                        sqlalchemy.and_(
+                            *[v(table.c[k]) for k, v in conditions.items()]
+                        )
+                    )
                 )
                 result: sqlalchemy.CursorResult = session.execute(query)
                 session.commit()
