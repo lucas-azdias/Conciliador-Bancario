@@ -1,4 +1,3 @@
-import datetime
 import sqlalchemy
 import sqlalchemy.orm
 import typeguard
@@ -8,10 +7,10 @@ from .. import BaseModel
 
 
 @typeguard.typechecked
-class DailyBankData(BaseModel.BaseModel):
+class StatementFinisherLink(BaseModel.BaseModel):
 
     # Table name
-    __tablename__ = "daily_bank_data"
+    __tablename__ = "statement_finisher_link"
 
     # Columns
     id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
@@ -20,16 +19,18 @@ class DailyBankData(BaseModel.BaseModel):
         autoincrement = True
     )
     statement_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
-        sqlalchemy.ForeignKey("statement.id")
+        sqlalchemy.ForeignKey("statement.id"),
+        nullable = False
     )
-    date: sqlalchemy.orm.Mapped[datetime.date]
-    name = sqlalchemy.orm.Mapped[str]
-    value = sqlalchemy.orm.Mapped[int]
+    finisher_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.ForeignKey("finisher.id"),
+        nullable = False
+    )
 
     # Relationships
     statements: sqlalchemy.orm.Mapped[typing.List["Statement"]] = sqlalchemy.orm.relationship( # type: ignore
-        back_populates = "daily_bank_data"
+        back_populates = "statement_finisher_link"
     )
-    daily_datas: sqlalchemy.orm.Mapped[typing.List["DailyData"]] = sqlalchemy.orm.relationship( # type: ignore
-        back_populates = "daily_bank_data"
+    finishers: sqlalchemy.orm.Mapped[typing.List["Finishers"]] = sqlalchemy.orm.relationship( # type: ignore
+        back_populates = "statement_finisher_link"
     )

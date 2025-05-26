@@ -1,10 +1,12 @@
 import datetime
 import pathlib
 import polars
+import sqlalchemy
 import typeguard
 
 from . import Currency
 from .database import Database
+from .database.models import Finisher
 from .loaders import ReportLoader, StatementLoader
 
 
@@ -52,6 +54,7 @@ class Conciliador():
                 polars.concat_str([polars.col("Data"), polars.lit(" "), polars.col("Término")]).str.strptime(polars.Datetime, "%d/%m/%Y %H:%M:%S").alias("end_time"),
                 polars.col("Finalizadora").cast(polars.String).alias("name"),
                 polars.col("Total").str.replace_all(r"[,.]", "").cast(polars.Int64).alias("value"),
+                polars.col("Finalizadora").map_elements(Finisher.FinisherType.determine_type).cast(polars.String).alias("type"),
             ]
         )
 
@@ -84,6 +87,7 @@ class Conciliador():
                 polars.col("id").alias("report_id"),
                 polars.col("name").alias("name"),
                 polars.col("value").alias("value"),
+                polars.col("type").alias("type"),
             ]
         )
 
@@ -124,21 +128,40 @@ class Conciliador():
         self.__database.extend("statement", statements_df)
 
 
-    def compile(
-            self,
-            start_date: datetime.date,
-            end_date: datetime.date,
-            can_overwrite_compiled: bool = False
-        ) -> None:
-        current_date = start_date
+    # def compile(
+    #         self,
+    #         start_date: datetime.date,
+    #         end_date: datetime.date,
+    #         can_overwrite_compiled: bool = False
+    #     ) -> None:
+    #     current_date = start_date
 
-        while current_date <= end_date:
-            self.__database.read("")
+    #     while current_date <= end_date:
+    #         # Get all reports based on current date
+    #         reports = self.__database.read(
+    #             "report",
+    #             start_time = lambda x: sqlalchemy.and_(
+    #                 x >= datetime.datetime.min.replace(
+    #                     year = current_date.year,
+    #                     month = current_date.month,
+    #                     day = current_date.day
+    #                 ), x <= datetime.datetime.max.replace(
+    #                     year = current_date.year,
+    #                     month = current_date.month,
+    #                     day = current_date.day
+    #                 )
+    #             )
+    #         )
+    #         statements = self.__database.read(
+    #             "statement",
+    #             date = lambda x: x == current_date
+    #         )
+    #         print(reports, statements, end = "\n")
 
-            current_date += datetime.timedelta(days = 1)
+    #         current_date += datetime.timedelta(days = 1)
 
 
-    def check(
+    def link(
             self
             #...
         ) -> None:

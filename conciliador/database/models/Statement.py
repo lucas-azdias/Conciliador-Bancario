@@ -24,7 +24,8 @@ class Statement(BaseModel.BaseModel):
     value: sqlalchemy.orm.Mapped[int]
 
     # Relationships
-    daily_bank_datas: sqlalchemy.orm.Mapped[typing.List["DailyBankData"]] = sqlalchemy.orm.relationship( # type: ignore
+    finishers: sqlalchemy.orm.Mapped[typing.List["Finisher"]] = sqlalchemy.orm.relationship( # type: ignore
+        secondary = "statement_finisher_link",
         back_populates = "statement",
-        cascade = "all, delete-orphan"
+        viewonly = True
     )

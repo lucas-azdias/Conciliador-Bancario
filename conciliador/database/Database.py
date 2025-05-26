@@ -107,7 +107,7 @@ class Database():
     def read(
             self,
             table_name: BaseModel.BaseModel | str,
-            **conditions: typing.Callable[[sqlalchemy.Column], bool]
+            **conditions: typing.Callable[[sqlalchemy.Column], sqlalchemy.ClauseElement]
         ) -> polars.DataFrame:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
@@ -120,7 +120,7 @@ class Database():
                 query: sqlalchemy.Select = sqlalchemy.select(table)
 
                 if conditions:
-                    query.where(
+                    query = query.where(
                         sqlalchemy.and_(
                             *[v(table.c[k]) for k, v in conditions.items()]
                         )
@@ -145,7 +145,7 @@ class Database():
             self,
             table_name: BaseModel.BaseModel | str,
             data: typing.Dict[str, typing.Any],
-            **conditions: typing.Callable[[sqlalchemy.Column], bool]
+            **conditions: typing.Callable[[sqlalchemy.Column], sqlalchemy.ClauseElement]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
@@ -183,7 +183,7 @@ class Database():
     def delete(
             self,
             table_name: BaseModel.BaseModel | str,
-            **conditions: typing.Callable[[sqlalchemy.Column], bool]
+            **conditions: typing.Callable[[sqlalchemy.Column], sqlalchemy.ClauseElement]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")

@@ -22,8 +22,8 @@ def main():
     # Required operation
     parser.add_argument(
         "operation",
-        choices = ["load", "load_reports", "load_statements", "compile", "check", "all"],
-        help = "Operation to perform (required): \"load\", \"compile\", \"check\", \"all\"")
+        choices = ["load", "load_reports", "load_statements", "link", "all"],
+        help = "Operation to perform (required): \"load\", \"load_reports\", \"load_statements\", \"link\", \"all\"")
 
     # Optional input reports file/folder
     parser.add_argument(
@@ -174,21 +174,14 @@ def main():
                 can_overwrite_archive = not args["dev-mode"]
             )
 
-        case "compile":
-            conciliador.compile(
-                start_date = datetime.date(2025, 1, 1),
-                end_date = datetime.date(2025, 5, 25),
-                can_overwrite_compiled = False
-            )
-
-        case "check":
-            conciliador.check()
+        case "link":
+            conciliador.link()
 
         case "all":
             conciliador.load_reports()
             conciliador.load_statements()
             conciliador.compile()
-            conciliador.check()
+            conciliador.link()
 
         case _:
             raise Exception(f"Invalid operation detected: {args["operation"]}")
