@@ -9,9 +9,9 @@ from . import Loader
 STATEMENT_COLUMNS = ("Data", "Histórico", "Valor")
 
 
+@typeguard.typechecked
 class StatementLoader(Loader.Loader):
 
-    @typeguard.typechecked
     def process_file(
             self,
             path: pathlib.Path,

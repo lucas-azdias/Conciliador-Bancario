@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import dotenv
 import os
 import pathlib
@@ -120,7 +121,6 @@ def main():
         key: value
         for key, value in vars(parser.parse_args()).items()
     }
-    can_archive_and_overwrite = not args["dev-mode"]
 
     # Function to clear empty values in args
     clear_empty_args: typing.Callable[[typing.Dict[str, typing.Any]], typing.Dict[str, typing.Any]] = lambda d: {
@@ -148,34 +148,38 @@ def main():
             conciliador.load_reports(
                 input = pathlib.Path(args["in-reports"]),
                 archive = pathlib.Path(args["archive-reports"]),
-                can_archive = can_archive_and_overwrite,
-                can_overwrite_archive = can_archive_and_overwrite
+                can_archive = not args["dev-mode"],
+                can_overwrite_archive = not args["dev-mode"]
             )
             conciliador.load_statements(
                 input = pathlib.Path(args["in-statements"]),
                 archive = pathlib.Path(args["archive-statements"]),
-                can_archive = can_archive_and_overwrite,
-                can_overwrite_archive = can_archive_and_overwrite
+                can_archive = not args["dev-mode"],
+                can_overwrite_archive = not args["dev-mode"]
             )
 
         case "load_reports":
             conciliador.load_reports(
                 input = pathlib.Path(args["in-reports"]),
                 archive = pathlib.Path(args["archive-reports"]),
-                can_archive = can_archive_and_overwrite,
-                can_overwrite_archive = can_archive_and_overwrite
+                can_archive = not args["dev-mode"],
+                can_overwrite_archive = not args["dev-mode"]
             )
 
         case "load_statements":
             conciliador.load_statements(
                 input = pathlib.Path(args["in-statements"]),
                 archive = pathlib.Path(args["archive-statements"]),
-                can_archive = can_archive_and_overwrite,
-                can_overwrite_archive = can_archive_and_overwrite
+                can_archive = not args["dev-mode"],
+                can_overwrite_archive = not args["dev-mode"]
             )
 
         case "compile":
-            conciliador.compile()
+            conciliador.compile(
+                start_date = datetime.date(2025, 1, 1),
+                end_date = datetime.date(2025, 5, 25),
+                can_overwrite_compiled = False
+            )
 
         case "check":
             conciliador.check()

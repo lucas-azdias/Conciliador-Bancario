@@ -9,9 +9,9 @@ from . import Loader
 REPORT_COLUMNS = ("Turno", "Funcionário", "Data", "Início", "Término", "Finalizadora", "Total")
 
 
+@typeguard.typechecked
 class ReportLoader(Loader.Loader):
 
-    @typeguard.typechecked
     def process_file(
             self,
             path: pathlib.Path,

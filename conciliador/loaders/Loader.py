@@ -6,9 +6,9 @@ import typeguard
 import typing
 
 
+@typeguard.typechecked
 class Loader(abc.ABC):
 
-    @typeguard.typechecked
     def process_files(
             self,
             paths: typing.Iterable[pathlib.Path],
@@ -27,7 +27,6 @@ class Loader(abc.ABC):
         return tuple(dataframes)
 
 
-    @typeguard.typechecked
     def process_file(
             self,
             path: pathlib.Path,
@@ -36,7 +35,6 @@ class Loader(abc.ABC):
         raise NotImplementedError("Subclasses must implement this method.")
 
 
-    @typeguard.typechecked
     def archive_files(
         self,
         paths: typing.Iterable[pathlib.Path],
@@ -62,7 +60,6 @@ class Loader(abc.ABC):
             path.rename(destination)
 
 
-    @typeguard.typechecked
     def archive_file(
         self,
         path: pathlib.Path,
@@ -76,7 +73,6 @@ class Loader(abc.ABC):
         )
 
 
-    @typeguard.typechecked
     def extract_paths(
         self,
         input: pathlib.Path,
@@ -94,7 +90,6 @@ class Loader(abc.ABC):
         return tuple(paths)
 
 
-    @typeguard.typechecked
     def detect_encoding(
             self,
             path: pathlib.Path

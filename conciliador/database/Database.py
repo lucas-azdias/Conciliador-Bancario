@@ -9,9 +9,9 @@ from . import BaseModel
 from .models import * # Build all ORM models into Base.metadata
 
 
+@typeguard.typechecked
 class Database():
 
-    @typeguard.typechecked
     def __init__(
             self,
             database_uri: str,
@@ -36,10 +36,9 @@ class Database():
         self.__db_metadata.reflect(bind = self.__engine)
 
 
-    @typeguard.typechecked
     def insert(
             self,
-            table_name: str,
+            table_name: BaseModel.BaseModel | str,
             **data: typing.Dict[str, typing.Any]
         ) -> int:
         if not self.has_table(table_name):
@@ -47,7 +46,9 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(
+                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                )
                 query: sqlalchemy.Insert = sqlalchemy.insert(table).values(**data)
                 result: sqlalchemy.CursorResult = session.execute(query)
                 session.commit()
@@ -62,10 +63,9 @@ class Database():
                 session.close()
 
 
-    @typeguard.typechecked
     def extend(
             self,
-            table_name: str,
+            table_name: BaseModel.BaseModel | str,
             data: polars.DataFrame
         ) -> typing.Tuple[int, int]:
         if not self.has_table(table_name):
@@ -74,14 +74,16 @@ class Database():
         with self.__sessionmaker() as session:
             try:
                 rows_affected: int = data.write_database(
-                    table_name,
+                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name,
                     self.__engine,
                     if_table_exists = "append",
                     engine = "sqlalchemy"
                 )
 
                 # Get last inserted id
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(
+                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                )
                 pk_col: sqlalchemy.Column = list(table.primary_key.columns)[0]
                 query: sqlalchemy.Select = sqlalchemy.select(sqlalchemy.func.max(pk_col))
                 last_id: int = session.execute(query).scalar_one_or_none()
@@ -96,10 +98,9 @@ class Database():
                 session.close()
 
 
-    @typeguard.typechecked
     def read(
             self,
-            table_name: str,
+            table_name: BaseModel.BaseModel | str,
             **conditions: typing.Optional[typing.Dict[str, typing.Any]]
         ) -> polars.DataFrame:
         if not self.has_table(table_name):
@@ -107,7 +108,9 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(
+                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                )
                 query: sqlalchemy.Select = sqlalchemy.select(table)
 
                 if conditions:
@@ -132,10 +135,9 @@ class Database():
                 session.close()
 
 
-    @typeguard.typechecked
     def update(
             self,
-            table_name: str,
+            table_name: BaseModel.BaseModel | str,
             data: typing.Dict[str, typing.Any],
             **conditions: typing.Dict[str, typing.Any]
         ) -> int:
@@ -144,7 +146,9 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(
+                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                )
                 query: sqlalchemy.Update = (
                     sqlalchemy.update(table)
                     .where(sqlalchemy.and_(*[table.c[k] == v for k, v in conditions.items()]))
@@ -163,10 +167,9 @@ class Database():
                 session.close()
 
 
-    @typeguard.typechecked
     def delete(
             self,
-            table_name: str,
+            table_name: BaseModel.BaseModel | str,
             **conditions: typing.Dict[str, typing.Any]
         ) -> int:
         if not self.has_table(table_name):
@@ -174,7 +177,9 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(table_name)
+                table: sqlalchemy.Table = self.__db_metadata.tables.get(
+                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                )
                 query: sqlalchemy.Delete = (
                     sqlalchemy.delete(table)
                     .where(sqlalchemy.and_(*[table.c[k] == v for k, v in conditions.items()]))
@@ -194,12 +199,15 @@ class Database():
 
     def has_table(
             self,
-            table_name: str
+            table_name: BaseModel.BaseModel | str
         ) -> bool:
-        return table_name in self.__inspector.get_table_names()
+        if isinstance(table_name, BaseModel.BaseModel):
+            return table_name.__tablename__ in self.__inspector.get_table_names()
+        if isinstance(table_name, str):
+            return table_name in self.__inspector.get_table_names()
+        raise TypeError("Invalid table name type.")
 
 
-    @typeguard.typechecked
     def sync_schema(
             self,
             can_fill: bool = False,

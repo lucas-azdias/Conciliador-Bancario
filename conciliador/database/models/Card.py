@@ -1,10 +1,12 @@
 import sqlalchemy
 import sqlalchemy.orm
+import typeguard
 import typing
 
 from .. import BaseModel
 
 
+@typeguard.typechecked
 class Card(BaseModel.BaseModel):
 
     # Table name

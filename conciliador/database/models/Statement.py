@@ -1,11 +1,13 @@
 import datetime
 import sqlalchemy
 import sqlalchemy.orm
+import typeguard
 import typing
 
 from .. import BaseModel
 
 
+@typeguard.typechecked
 class Statement(BaseModel.BaseModel):
 
     # Table name

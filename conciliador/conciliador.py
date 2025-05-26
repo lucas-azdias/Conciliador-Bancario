@@ -1,3 +1,4 @@
+import datetime
 import pathlib
 import polars
 import typeguard
@@ -7,9 +8,9 @@ from .database import Database
 from .loaders import ReportLoader, StatementLoader
 
 
+@typeguard.typechecked
 class Conciliador():
 
-    @typeguard.typechecked
     def __init__(
             self,
             database_uri: str,
@@ -22,7 +23,6 @@ class Conciliador():
         self.__currency: Currency.Currency = Currency.Currency(currency, thousands = thousands, decimals = decimals)
 
 
-    @typeguard.typechecked
     def load_reports(
             self,
             input: pathlib.Path,
@@ -91,7 +91,6 @@ class Conciliador():
         self.__database.extend("finisher", finishers_df)
 
 
-    @typeguard.typechecked
     def load_statements(
             self,
             input: pathlib.Path,
@@ -125,15 +124,20 @@ class Conciliador():
         self.__database.extend("statement", statements_df)
 
 
-    @typeguard.typechecked
     def compile(
-            self
-            #...
+            self,
+            start_date: datetime.date,
+            end_date: datetime.date,
+            can_overwrite_compiled: bool = False
         ) -> None:
-        ...
+        current_date = start_date
+
+        while current_date <= end_date:
+            self.__database.read("")
+
+            current_date += datetime.timedelta(days = 1)
 
 
-    @typeguard.typechecked
     def check(
             self
             #...
