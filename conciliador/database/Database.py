@@ -39,7 +39,7 @@ class Database():
     def insert(
             self,
             table_name: BaseModel.BaseModel | str,
-            **data: typing.Dict[str, typing.Any]
+            **data: typing.Optional[typing.Dict[str, typing.Any]]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
@@ -139,7 +139,7 @@ class Database():
             self,
             table_name: BaseModel.BaseModel | str,
             data: typing.Dict[str, typing.Any],
-            **conditions: typing.Dict[str, typing.Any]
+            **conditions: typing.Optional[typing.Dict[str, typing.Any]]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
@@ -170,7 +170,7 @@ class Database():
     def delete(
             self,
             table_name: BaseModel.BaseModel | str,
-            **conditions: typing.Dict[str, typing.Any]
+            **conditions: typing.Optional[typing.Dict[str, typing.Any]]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
