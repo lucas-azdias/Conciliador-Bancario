@@ -50,7 +50,7 @@ class Database():
         with self.__sessionmaker() as session:
             try:
                 table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
                 )
                 query: sqlalchemy.Insert = sqlalchemy.insert(table).values(**data)
                 result: sqlalchemy.CursorResult = session.execute(query)
@@ -80,7 +80,7 @@ class Database():
         with self.__sessionmaker() as session:
             try:
                 rows_affected: int = data.write_database(
-                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name,
+                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name,
                     self.__engine,
                     if_table_exists = "append",
                     engine = "sqlalchemy"
@@ -88,7 +88,7 @@ class Database():
 
                 # Get last inserted id
                 table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
                 )
                 pk_col: sqlalchemy.Column = list(table.primary_key.columns)[0]
                 query: sqlalchemy.Select = sqlalchemy.select(sqlalchemy.func.max(pk_col))
@@ -115,7 +115,7 @@ class Database():
         with self.__sessionmaker() as session:
             try:
                 table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
                 )
                 query: sqlalchemy.Select = sqlalchemy.select(table)
 
@@ -156,7 +156,7 @@ class Database():
         with self.__sessionmaker() as session:
             try:
                 table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
                 )
                 query: sqlalchemy.Update = (
                     sqlalchemy.update(table)
@@ -191,7 +191,7 @@ class Database():
         with self.__sessionmaker() as session:
             try:
                 table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(BaseModel.BaseModel) else table_name
+                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
                 )
                 query: sqlalchemy.Delete = (
                     sqlalchemy.delete(table)
