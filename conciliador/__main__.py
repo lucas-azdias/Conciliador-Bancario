@@ -5,7 +5,7 @@ import os
 import pathlib
 import typing
 
-from . import Conciliador
+from .src import Conciliador
 
 
 def main():
@@ -13,6 +13,7 @@ def main():
     dotenv.load_dotenv(
         dotenv.find_dotenv(raise_error_if_not_found = True),
         verbose = True,
+        override = True,
         encoding = "utf-8"
     )
 
@@ -180,7 +181,6 @@ def main():
         case "all":
             conciliador.load_reports()
             conciliador.load_statements()
-            conciliador.compile()
             conciliador.link()
 
         case _:

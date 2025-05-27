@@ -1,6 +1,5 @@
 import polars
 import sqlalchemy
-import sqlalchemy.exc
 import sqlalchemy.orm
 import typeguard
 import typing
@@ -19,7 +18,7 @@ class Database():
             can_purge: bool = False,
             has_dev_mode: bool = False
         ) -> None:
-        self.__engine: sqlalchemy.Engine = sqlalchemy.create_engine(database_uri, echo = has_dev_mode)
+        self.__engine: sqlalchemy.Engine = sqlalchemy.create_engine(database_uri, echo = False)#has_dev_mode)
         self.__db_metadata: sqlalchemy.MetaData = sqlalchemy.MetaData()
         self.__orm_metadata: sqlalchemy.MetaData = BaseModel.BaseModel.metadata
         self.__sessionmaker = sqlalchemy.orm.sessionmaker(bind = self.__engine)
@@ -40,7 +39,7 @@ class Database():
             self,
             table_name: BaseModel.BaseModel | str,
             data: typing.Dict[str, typing.Any]
-        ) -> int:
+        ) -> typing.Tuple[int, ...]:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
@@ -49,16 +48,14 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
-                )
-                query: sqlalchemy.Insert = sqlalchemy.insert(table).values(**data)
-                result: sqlalchemy.CursorResult = session.execute(query)
+                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                instance: BaseModel.BaseModel = model(**data)
+                session.add(instance)
                 session.commit()
 
-                return result.inserted_primary_key[0] if result.inserted_primary_key else -1
+                return tuple(pk for pk in sqlalchemy.inspect(instance).identity)
 
-            except sqlalchemy.exc.SQLAlchemyError as e:
+            except Exception as e:
                 session.rollback()
                 raise Exception(f"Failed to insert record: {e}")
 
@@ -70,7 +67,7 @@ class Database():
             self,
             table_name: BaseModel.BaseModel | str,
             data: polars.DataFrame
-        ) -> typing.Tuple[int, int]:
+        ) -> typing.Tuple[int, ...]:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
@@ -79,24 +76,14 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                rows_affected: int = data.write_database(
-                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name,
-                    self.__engine,
-                    if_table_exists = "append",
-                    engine = "sqlalchemy"
-                )
+                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                instances: typing.List[BaseModel.BaseModel] = [model(**record) for record in data.to_dicts()]
+                session.add_all(instances)
+                session.commit()
 
-                # Get last inserted id
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
-                )
-                pk_col: sqlalchemy.Column = list(table.primary_key.columns)[0]
-                query: sqlalchemy.Select = sqlalchemy.select(sqlalchemy.func.max(pk_col))
-                last_id: int = session.execute(query).scalar_one_or_none()
+                return tuple(pk for pk in sqlalchemy.inspect(instances[-1]).identity)
 
-                return (rows_affected, last_id if last_id else -1)
-
-            except sqlalchemy.exc.SQLAlchemyError as e:
+            except Exception as e:
                 session.rollback()
                 raise Exception(f"Failed to extend table: {e}")
 
@@ -114,26 +101,22 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
-                )
-                query: sqlalchemy.Select = sqlalchemy.select(table)
+                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                query: sqlalchemy.orm.Query = session.query(model)
 
                 if conditions:
-                    query = query.where(
-                        sqlalchemy.and_(
-                            *[v(table.c[k]) for k, v in conditions.items()]
-                        )
-                    )
+                    for column_name, clause in conditions.items():
+                        column = getattr(model, column_name, None)
+                        if not column:
+                            raise ValueError(f"Invalid column name \"{column_name}\" for table \"{model.__tablename__}\" was given.")
+                        query = query.filter(clause[column])
 
-                fetched: polars.DataFrame = polars.read_database(
-                    query = str(query.compile(self.__engine, compile_kwargs = {"literal_binds": True})),
-                    connection = self.__engine
-                )
+                schema: typing.List[str] = [column.key for column in model.__table__.columns]
+                fetched: typing.List[BaseModel.BaseModel] = query.all()
 
-                return fetched
+                return polars.DataFrame([instance.to_dict() for instance in fetched], schema = schema)
 
-            except sqlalchemy.exc.SQLAlchemyError as e:
+            except Exception as e:
                 session.rollback()
                 raise Exception(f"Failed to read records: {e}")
 
@@ -155,24 +138,27 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
-                )
-                query: sqlalchemy.Update = (
-                    sqlalchemy.update(table)
-                    .where(
-                        sqlalchemy.and_(
-                            *[v(table.c[k]) for k, v in conditions.items()]
-                        )
-                    )
-                    .values(**data)
-                )
-                result: sqlalchemy.CursorResult = session.execute(query)
+                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                query: sqlalchemy.orm.Query = session.query(model)
+
+                if conditions:
+                    for column_name, clause in conditions.items():
+                        column = getattr(model, column_name, None)
+                        if not column:
+                            raise ValueError(f"Invalid column name \"{column_name}\" for table \"{model.__tablename__}\" was given.")
+                        query = query.filter(clause[column])
+
+                fetched: typing.List[BaseModel.BaseModel] = query.all()
+
+                for instance in fetched:
+                    for key, value in data.items():
+                        setattr(instance, key, value)
+
                 session.commit()
 
-                return result.rowcount
+                return len(fetched)
 
-            except sqlalchemy.exc.SQLAlchemyError as e:
+            except Exception as e:
                 session.rollback()
                 raise Exception(f"Failed to update records: {e}")
 
@@ -190,23 +176,26 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                table: sqlalchemy.Table = self.__db_metadata.tables.get(
-                    table_name.__tablename__ if isinstance(table_name, BaseModel.BaseModel) else table_name
-                )
-                query: sqlalchemy.Delete = (
-                    sqlalchemy.delete(table)
-                    .where(
-                        sqlalchemy.and_(
-                            *[v(table.c[k]) for k, v in conditions.items()]
-                        )
-                    )
-                )
-                result: sqlalchemy.CursorResult = session.execute(query)
+                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                query: sqlalchemy.orm.Query = session.query(model)
+
+                if conditions:
+                    for column_name, clause in conditions.items():
+                        column = getattr(model, column_name, None)
+                        if not column:
+                            raise ValueError(f"Invalid column name \"{column_name}\" for table \"{model.__tablename__}\" was given.")
+                        query = query.filter(clause[column])
+
+                fetched: typing.List[BaseModel.BaseModel] = query.all()
+
+                for instance in fetched:
+                    session.delete(instance)
+
                 session.commit()
 
-                return result.rowcount
+                return len(fetched)
 
-            except sqlalchemy.exc.SQLAlchemyError as e:
+            except Exception as e:
                 session.rollback()
                 raise Exception(f"Failed to delete records: {e}")
 
@@ -220,9 +209,16 @@ class Database():
         ) -> bool:
         if isinstance(table_name, BaseModel.BaseModel):
             return table_name.__tablename__ in self.__inspector.get_table_names()
-        if isinstance(table_name, str):
+        elif isinstance(table_name, str):
             return table_name in self.__inspector.get_table_names()
         raise TypeError("Invalid table name type.")
+
+
+    def get_model(self, table_name: str) -> typing.Type[BaseModel.BaseModel]:
+        for subcls in BaseModel.BaseModel.__subclasses__():
+            if hasattr(subcls, "__tablename__") and subcls.__tablename__ == table_name:
+                return subcls
+        raise ValueError(f"Invalid table name \"{table_name}\" was given.")
 
 
     def sync_schema(
@@ -243,7 +239,7 @@ class Database():
             try:
                 for table_name in tables_to_create:
                     self.__orm_metadata.tables[table_name].create(self.__engine)
-            except sqlalchemy.exc.SQLAlchemyError as e:
+            except Exception as e:
                 raise Exception(f"Failed to create tables: {str(e)}")
 
         # Handle table purging
@@ -255,7 +251,7 @@ class Database():
             try:
                 for table_name in tables_to_purge:
                     self.__db_metadata.tables[table_name].drop(self.__engine)
-            except sqlalchemy.exc.SQLAlchemyError as e:
+            except Exception as e:
                 raise Exception(f"Failed to purge tables: {str(e)}")
 
         # Handle column synchronization for common tables
@@ -275,7 +271,7 @@ class Database():
                         column: sqlalchemy.Column = self.__orm_metadata.tables[table_name].c[column_name]
                         with self.__engine.connect() as conn:
                             conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column.type};")
-                except sqlalchemy.exc.SQLAlchemyError as e:
+                except Exception as e:
                     raise Exception(f"Failed to create columns in table \"{table_name}\": {str(e)}")
 
             # Handle column purging
@@ -288,5 +284,5 @@ class Database():
                     for column_name in columns_to_purge:
                         with self.__engine.connect() as conn:
                             conn.execute(f"ALTER TABLE {table_name} DROP COLUMN {column_name};")
-                except sqlalchemy.exc.SQLAlchemyError as e:
+                except Exception as e:
                     raise Exception(f"Failed to purge columns in table \"{table_name}\": {str(e)}")

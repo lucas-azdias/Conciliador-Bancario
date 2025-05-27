@@ -1,12 +1,10 @@
 import datetime
 import pathlib
 import polars
-import sqlalchemy
 import typeguard
 
 from . import Currency
 from .database import Database
-from .database.models import Finisher
 from .loaders import ReportLoader, StatementLoader
 
 
@@ -54,7 +52,6 @@ class Conciliador():
                 polars.concat_str([polars.col("Data"), polars.lit(" "), polars.col("Término")]).str.strptime(polars.Datetime, "%d/%m/%Y %H:%M:%S").alias("end_time"),
                 polars.col("Finalizadora").cast(polars.String).alias("name"),
                 polars.col("Total").str.replace_all(r"[,.]", "").cast(polars.Int64).alias("value"),
-                polars.col("Finalizadora").map_elements(Finisher.FinisherType.determine_type).cast(polars.String).alias("type"),
             ]
         )
 
@@ -69,7 +66,7 @@ class Conciliador():
         ).unique()
 
         # Extend database with reports and recover ids
-        _, last_id = self.__database.extend("report", reports_df)
+        last_id = self.__database.extend("report", reports_df)[0]
         reports_df = reports_df.with_columns([
             (polars.Series(name = "id", values = [last_id - (reports_df.height - i - 1) for i in range(reports_df.height)]))
         ])
@@ -87,7 +84,6 @@ class Conciliador():
                 polars.col("id").alias("report_id"),
                 polars.col("name").alias("name"),
                 polars.col("value").alias("value"),
-                polars.col("type").alias("type"),
             ]
         )
 
@@ -115,57 +111,55 @@ class Conciliador():
             raise Exception("No data was found.")
 
         # Concatenate dataframes and create statements dataframe
-        statements_df = polars.concat(dataframes, how = "vertical")
-        statements_df = statements_df.select(
+        concat_df = polars.concat(dataframes, how = "vertical")
+        concat_df = concat_df.select(
             [
                 polars.col("Data").str.strptime(polars.Date, "%d/%m/%Y").alias("date"),
                 polars.col("Histórico").cast(polars.String).alias("name"),
-                polars.col("Valor").str.replace_all(r"[,.]", "").cast(polars.Int64).alias("value")
+                polars.col("Valor").str.replace_all(r"[,.]", "").cast(polars.Int64).alias("value"),
             ]
         )
 
-        # Save dataframes into database
-        self.__database.extend("statement", statements_df)
+        # Create statements dataframe
+        statements_df = concat_df.select(
+            [
+                polars.col("date").alias("date"),
+            ]
+        ).unique()
 
+        # Extend database with reports and recover ids
+        last_id = self.__database.extend("statement", statements_df)[0]
+        statements_df = statements_df.with_columns([
+            (polars.Series(name = "id", values = [last_id - (statements_df.height - i - 1) for i in range(statements_df.height)]))
+        ])
 
-    # def compile(
-    #         self,
-    #         start_date: datetime.date,
-    #         end_date: datetime.date,
-    #         can_overwrite_compiled: bool = False
-    #     ) -> None:
-    #     current_date = start_date
+        # Link reports to statement entries with recovered id
+        concat_df = concat_df.join(
+            statements_df,
+            on = [col for col in concat_df.columns if col in statements_df.columns],
+            how = "left"
+        )
 
-    #     while current_date <= end_date:
-    #         # Get all reports based on current date
-    #         reports = self.__database.read(
-    #             "report",
-    #             start_time = lambda x: sqlalchemy.and_(
-    #                 x >= datetime.datetime.min.replace(
-    #                     year = current_date.year,
-    #                     month = current_date.month,
-    #                     day = current_date.day
-    #                 ), x <= datetime.datetime.max.replace(
-    #                     year = current_date.year,
-    #                     month = current_date.month,
-    #                     day = current_date.day
-    #                 )
-    #             )
-    #         )
-    #         statements = self.__database.read(
-    #             "statement",
-    #             date = lambda x: x == current_date
-    #         )
-    #         print(reports, statements, end = "\n")
+        # Create statement entries dataframe
+        statement_entries_df = concat_df.select(
+            [
+                polars.col("id").alias("statement_id"),
+                polars.col("name").alias("name"),
+                polars.col("value").alias("value"),
+            ]
+        )
 
-    #         current_date += datetime.timedelta(days = 1)
+        # Extend database with finishers
+        self.__database.extend("statement_entry", statement_entries_df)
+        print(self.__database.read("statement_entry"))
 
 
     def link(
-            self
-            #...
+            self,
+            start_date: datetime.date,
+            end_date: datetime.date
         ) -> None:
-        ...
+        print(self.__database.read("report"))
 
 
 if __name__ == "__main__":
