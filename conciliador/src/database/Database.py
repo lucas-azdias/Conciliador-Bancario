@@ -1,3 +1,6 @@
+import colorama
+import logging
+import pathlib
 import polars
 import sqlalchemy
 import sqlalchemy.orm
@@ -14,11 +17,13 @@ class Database():
     def __init__(
             self,
             database_uri: str,
+            log_path: pathlib.Path,
             can_fill: bool = True,
             can_purge: bool = False,
             has_dev_mode: bool = False
         ) -> None:
-        self.__engine: sqlalchemy.Engine = sqlalchemy.create_engine(database_uri, echo = False)#has_dev_mode)
+        self.__logger: logging.Logger = self.__init_logger(log_path, has_dev_mode)
+        self.__engine: sqlalchemy.Engine = sqlalchemy.create_engine(database_uri)
         self.__db_metadata: sqlalchemy.MetaData = sqlalchemy.MetaData()
         self.__orm_metadata: sqlalchemy.MetaData = BaseModel.BaseModel.metadata
         self.__sessionmaker = sqlalchemy.orm.sessionmaker(bind = self.__engine)
@@ -286,3 +291,45 @@ class Database():
                             conn.execute(f"ALTER TABLE {table_name} DROP COLUMN {column_name};")
                 except Exception as e:
                     raise Exception(f"Failed to purge columns in table \"{table_name}\": {str(e)}")
+
+
+    def __init_logger(
+            self,
+            log_path: pathlib.Path,
+            has_dev_mode: bool
+        ) -> logging.Logger:
+        logger = logging.getLogger("sqlalchemy.engine")
+
+        # Clear existing handlers to avoid duplicates
+        logger.handlers = []
+
+        if has_dev_mode:
+            class ColoredFormatter(logging.Formatter):
+                def format(self, record):
+                    msg = super().format(record)
+                    return f"{colorama.Fore.YELLOW}{msg}{colorama.Style.RESET_ALL}"
+
+            # Logging output to console
+            logger.setLevel(logging.DEBUG)
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(ColoredFormatter(
+                fmt = "%(asctime)s [%(levelname)s] %(message)s",
+                datefmt = "%Y-%m-%d %H:%M:%S"
+            ))
+            logger.addHandler(console_handler)
+
+        else:
+            # Logging output to file
+            logger.setLevel(logging.INFO)
+            file_handler = logging.FileHandler(
+                log_path.absolute(),
+                mode = "w",
+                encoding = "utf-8"
+            )
+            file_handler.setFormatter(logging.Formatter(
+                fmt = "%(asctime)s [%(levelname)s] %(message)s",
+                datefmt = "%Y-%m-%d %H:%M:%S"
+            ))
+            logger.addHandler(file_handler)
+
+        return logger

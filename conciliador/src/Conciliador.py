@@ -14,13 +14,22 @@ class Conciliador():
     def __init__(
             self,
             database_uri: str,
+            database_log_path: pathlib.Path,
             currency: str = "USD",
             thousands: str = ",",
             decimals: str = ".",
             has_dev_mode: bool = False
         ) -> None:
-        self.__database: Database.Database = Database.Database(database_uri = database_uri, has_dev_mode = has_dev_mode)
-        self.__currency: Currency.Currency = Currency.Currency(currency, thousands = thousands, decimals = decimals)
+        self.__database: Database.Database = Database.Database(
+            database_uri,
+            database_log_path,
+            has_dev_mode = has_dev_mode
+        )
+        self.__currency: Currency.Currency = Currency.Currency(
+            currency,
+            thousands = thousands,
+            decimals = decimals
+        )
 
 
     def load_reports(
@@ -151,7 +160,6 @@ class Conciliador():
 
         # Extend database with finishers
         self.__database.extend("statement_entry", statement_entries_df)
-        print(self.__database.read("statement_entry"))
 
 
     def link(
