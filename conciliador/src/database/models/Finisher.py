@@ -1,4 +1,5 @@
 import sqlalchemy
+import sqlalchemy.ext.hybrid
 import sqlalchemy.orm
 import re
 import typeguard
@@ -35,6 +36,12 @@ class Finisher(BaseModel.BaseModel):
         sqlalchemy.JSON,
         nullable = True
     )
+
+
+    # Computed columns
+    @sqlalchemy.ext.hybrid.hybrid_property
+    def verified_value(self) -> int:
+        return sum(statement_entry.value for statement_entry in self.statement_entries)
 
 
     # Relationships

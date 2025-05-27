@@ -24,25 +24,27 @@ with Session(engine) as session:
         end_time=datetime(2025, 2, 19, 20, 8, 4)
     )
     session.add_all([report1, report2])
-    session.commit()  # Should print "oo"
+    session.commit()
 
     # Create Finishers
     finisher1 = Finisher.Finisher(report_id=report1.id, name="RECEBIMENTO DINHEIRO", value=595700, type="RECEBIMENTO DINHEIRO")
     finisher2 = Finisher.Finisher(report_id=report1.id, name="ELO DEBITO", value=38500, type="ELO DEBITO")
     finisher3 = Finisher.Finisher(report_id=report2.id, name="VISA DEBITO", value=282617, type="VISA DEBITO")
     session.add_all([finisher1, finisher2, finisher3])
-    session.commit()  # Should print "oo"
+    session.commit()
 
     # Create Statements and StatementEntries
     statement = Statement.Statement(date=date(2025,2,2))
-    statement_entry = StatementEntry.StatementEntry(statement_id=1, name="DEPÓSITO", value=13, type=None)
-    session.add_all([statement, statement_entry])
-    session.commit()  # Should print "oo"
+    statement_entry1 = StatementEntry.StatementEntry(statement_id=1, name="DEPÓSITO", value=13, type=None)
+    statement_entry2 = StatementEntry.StatementEntry(statement_id=2, name="PIX CREDITO: LUCIO", value=45, type=None)
+    session.add_all([statement, statement_entry1, statement_entry2])
+    session.commit()
 
     # Link StatementEntry and Finisher
-    statement_entry.finishers.append(finisher1)
-    statement_entry.finishers.append(finisher3)
-    session.commit()  # Should print "oo"
+    statement_entry1.finishers.append(finisher1)
+    statement_entry1.finishers.append(finisher3)
+    statement_entry2.finishers.append(finisher1)
+    session.commit()
 
     # Query all tables
     print("\nAll Reports:")
@@ -53,7 +55,7 @@ with Session(engine) as session:
     print("\nAll Finishers:")
     for finisher in session.query(Finisher.Finisher).all():
         print(f"Finisher(id={finisher.id}, report_id={finisher.report_id}, name={finisher.name}, "
-              f"value={finisher.value}, type={finisher.type})")
+              f"value={finisher.value}, type={finisher.type}) [verified_value={finisher.verified_value}]")
 
     print("\nAll Statements:")
     for statement in session.query(Statement.Statement).all():
