@@ -17,6 +17,7 @@ class Report(BaseModel.BaseModel):
     # Columns
     id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
         primary_key = True,
+        unique = True,
         nullable = False,
         autoincrement = True
     )
@@ -27,9 +28,11 @@ class Report(BaseModel.BaseModel):
         nullable = False
     )
     start_time: sqlalchemy.orm.Mapped[datetime.datetime] = sqlalchemy.orm.mapped_column(
+        unique = True,
         nullable = False
     )
     end_time: sqlalchemy.orm.Mapped[datetime.datetime] = sqlalchemy.orm.mapped_column(
+        unique = True,
         nullable = False
     )
 

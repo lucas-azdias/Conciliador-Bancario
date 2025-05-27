@@ -17,10 +17,12 @@ class Statement(BaseModel.BaseModel):
     # Columns
     id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
         primary_key = True,
+        unique = True,
         nullable = False,
         autoincrement = True
     )
     date: sqlalchemy.orm.Mapped[datetime.date] = sqlalchemy.orm.mapped_column(
+        unique = True,
         nullable = False
     )
 

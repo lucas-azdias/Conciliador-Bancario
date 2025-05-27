@@ -17,6 +17,7 @@ class StatementEntry(BaseModel.BaseModel):
     # Columns
     id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
         primary_key = True,
+        unique = True,
         nullable = False,
         autoincrement = True
     )
