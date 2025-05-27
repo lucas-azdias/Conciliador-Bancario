@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from datetime import datetime, date
-from conciliador.src.database.models import Report, Statement, StatementEntry, Finisher, StatementEntryFinisherLink
+from conciliador.src.database.models import Report, Statement, StatementEntry, Finisher
 from conciliador.src.database import BaseModel
 
 # Create engine and tables
@@ -35,15 +35,10 @@ with Session(engine) as session:
 
     # Create Statements and StatementEntries
     statement = Statement.Statement(date=date(2025,2,2))
-    statement_entry1 = StatementEntry.StatementEntry(statement_id=1, name="DEPÓSITO", value=13, type=None)
-    statement_entry2 = StatementEntry.StatementEntry(statement_id=2, name="PIX CREDITO: LUCIO", value=45, type=None)
-    session.add_all([statement, statement_entry1, statement_entry2])
-    session.commit()
-
-    # Link StatementEntry and Finisher
-    statement_entry1.finishers.append(finisher1)
-    statement_entry1.finishers.append(finisher3)
-    statement_entry2.finishers.append(finisher1)
+    statement_entry1 = StatementEntry.StatementEntry(statement_id=1, finisher_id=1, name="DEPÓSITO", value=13, type=None)
+    statement_entry2 = StatementEntry.StatementEntry(statement_id=2, finisher_id=3, name="PIX CREDITO: LUCIO", value=45, type=None)
+    statement_entry3 = StatementEntry.StatementEntry(statement_id=3, finisher_id=3, name="PIX CREDITO: JULIO", value=15, type=None)
+    session.add_all([statement, statement_entry1, statement_entry2, statement_entry3])
     session.commit()
 
     # Query all tables
@@ -64,7 +59,3 @@ with Session(engine) as session:
     print("\nAll Statement Entries:")
     for entry in session.query(StatementEntry.StatementEntry).all():
         print(f"StatementEntry(id={entry.id}, statement_id={entry.statement_id}, name={entry.name}, value={entry.value}, type={entry.type})")
-
-    print("\nAll Statement Entry Finisher Links:")
-    for link in session.query(StatementEntryFinisherLink.StatementEntryFinisherLink).all():
-        print(f"Link(statement_entry_id={link.statement_entry_id}, finisher_id={link.finisher_id})")
