@@ -55,7 +55,7 @@ class Finisher(BaseModel.BaseModel):
         back_populates = "finishers"
     )
     statement_entries: sqlalchemy.orm.Mapped[typing.List["StatementEntry"]] = sqlalchemy.orm.relationship( # type: ignore
-        secondary = "finishers"
+        secondary = "statement_entry_finisher_link",
         back_populates = "finishers"
     )
 

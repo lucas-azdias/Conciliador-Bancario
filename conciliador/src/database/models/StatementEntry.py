@@ -25,10 +25,6 @@ class StatementEntry(BaseModel.BaseModel):
         sqlalchemy.ForeignKey("statement.id"),
         nullable = False
     )
-    finisher_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
-        sqlalchemy.ForeignKey("finisher.id"),
-        nullable = True
-    )
     name: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column(
         nullable = False
     )
@@ -41,11 +37,18 @@ class StatementEntry(BaseModel.BaseModel):
     )
 
 
+    # Computed columns
+    @sqlalchemy.ext.hybrid.hybrid_property
+    def verified_value(self) -> int:
+        return sum(finisher.value for finisher in self.finishers)
+
+
     # Relationships
     statement: sqlalchemy.orm.Mapped["Statement"] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "statement_entries"
     )
-    finisher: sqlalchemy.orm.Mapped["Finisher"] = sqlalchemy.orm.relationship( # type: ignore
+    finishers: sqlalchemy.orm.Mapped[typing.List["Finisher"]] = sqlalchemy.orm.relationship( # type: ignore
+        secondary = "statement_entry_finisher_link",
         back_populates = "statement_entries"
     )
 

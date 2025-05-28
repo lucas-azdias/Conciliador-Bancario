@@ -98,7 +98,6 @@ class Conciliador():
                 polars.col("name").alias("type"),
             ]
         )
-        print(finishers_df.to_pandas().head(100))
 
         # Extend database with finishers
         self.__database.extend("finisher", finishers_df)
