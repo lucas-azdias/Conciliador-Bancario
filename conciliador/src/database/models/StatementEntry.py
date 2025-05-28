@@ -27,7 +27,7 @@ class StatementEntry(BaseModel.BaseModel):
     )
     finisher_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
         sqlalchemy.ForeignKey("finisher.id"),
-        nullable = False
+        nullable = True
     )
     name: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column(
         nullable = False
