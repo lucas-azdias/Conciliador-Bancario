@@ -1,7 +1,9 @@
 import datetime
 import pathlib
 import polars
+import sqlalchemy
 import typeguard
+import typing
 
 from . import Currency
 from .database import Database
@@ -93,8 +95,10 @@ class Conciliador():
                 polars.col("id").alias("report_id"),
                 polars.col("name").alias("name"),
                 polars.col("value").alias("value"),
+                polars.col("name").alias("type"),
             ]
         )
+        print(finishers_df.to_pandas().head(100))
 
         # Extend database with finishers
         self.__database.extend("finisher", finishers_df)
@@ -167,7 +171,46 @@ class Conciliador():
             start_date: datetime.date,
             end_date: datetime.date
         ) -> None:
-        print(self.__database.read("report"))
+        # TODO
+        # To link finisher and statement entry:
+        current_date = start_date - datetime.timedelta(days = 1)
+        while current_date <= end_date:
+            current_date += datetime.timedelta(days = 1)
+
+            day_reports_ids: typing.List[int] = self.__database.read(
+                "report", 
+                start_time = lambda x: sqlalchemy.and_(
+                    x >= datetime.datetime.min.replace(current_date.year, current_date.month, current_date.day),
+                    x <= datetime.datetime.max.replace(current_date.year, current_date.month, current_date.day)
+                )
+            )["id"].to_list()
+            if not day_reports_ids:
+                continue
+            day_finishers: polars.DataFrame = self.__database.read(
+                "finisher",
+                report_id = lambda x: x.in_(day_reports_ids)
+            )
+            if day_finishers.is_empty():
+                continue
+            print(day_finishers)
+
+            day_statement_ids: typing.List[int] = self.__database.read(
+                "statement",
+                date = lambda x: x == current_date
+            )["id"].to_list()
+            if not day_statement_ids:
+                continue
+            day_statement_id: int = day_statement_ids[0]
+            day_statement_entries: polars.DataFrame = self.__database.read(
+                "statement_entry",
+                statement_id = lambda x: x == day_statement_id
+            )
+            if day_statement_entries.is_empty():
+                continue
+            print(day_statement_entries)
+
+            for row in day_statement_entries.to_dicts():
+                pass
 
 
 if __name__ == "__main__":

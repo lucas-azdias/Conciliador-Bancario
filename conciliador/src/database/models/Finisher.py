@@ -38,6 +38,12 @@ class Finisher(BaseModel.BaseModel):
     )
 
 
+    # Constraints
+    __table_args__ = (
+        sqlalchemy.UniqueConstraint("report_id", "name", name = "unique_report_id_type"),
+    )
+
+
     # Computed columns
     @sqlalchemy.ext.hybrid.hybrid_property
     def verified_value(self) -> int:
@@ -49,7 +55,8 @@ class Finisher(BaseModel.BaseModel):
         back_populates = "finishers"
     )
     statement_entries: sqlalchemy.orm.Mapped[typing.List["StatementEntry"]] = sqlalchemy.orm.relationship( # type: ignore
-        back_populates = "finisher"
+        secondary = "finishers"
+        back_populates = "finishers"
     )
 
 

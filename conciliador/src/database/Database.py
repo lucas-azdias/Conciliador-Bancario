@@ -114,7 +114,7 @@ class Database():
                         column = getattr(model, column_name, None)
                         if not column:
                             raise ValueError(f"Invalid column name \"{column_name}\" for table \"{model.__tablename__}\" was given.")
-                        query = query.filter(clause[column])
+                        query = query.filter(clause(column))
 
                 schema: typing.List[str] = [column.key for column in model.__table__.columns]
                 fetched: typing.List[BaseModel.BaseModel] = query.all()
@@ -151,7 +151,7 @@ class Database():
                         column = getattr(model, column_name, None)
                         if not column:
                             raise ValueError(f"Invalid column name \"{column_name}\" for table \"{model.__tablename__}\" was given.")
-                        query = query.filter(clause[column])
+                        query = query.filter(clause(column))
 
                 fetched: typing.List[BaseModel.BaseModel] = query.all()
 
@@ -189,7 +189,7 @@ class Database():
                         column = getattr(model, column_name, None)
                         if not column:
                             raise ValueError(f"Invalid column name \"{column_name}\" for table \"{model.__tablename__}\" was given.")
-                        query = query.filter(clause[column])
+                        query = query.filter(clause(column))
 
                 fetched: typing.List[BaseModel.BaseModel] = query.all()
 
