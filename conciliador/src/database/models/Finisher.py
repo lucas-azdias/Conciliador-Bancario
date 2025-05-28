@@ -26,6 +26,10 @@ class Finisher(BaseModel.BaseModel):
         sqlalchemy.ForeignKey("report.id"),
         nullable = False
     )
+    verification_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.ForeignKey("verification.id"),
+        nullable = True
+    )
     name: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column(
         nullable = False
     )
@@ -54,8 +58,7 @@ class Finisher(BaseModel.BaseModel):
     report: sqlalchemy.orm.Mapped["Report"] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "finishers"
     )
-    statement_entries: sqlalchemy.orm.Mapped[typing.List["StatementEntry"]] = sqlalchemy.orm.relationship( # type: ignore
-        secondary = "statement_entry_finisher_link",
+    verification: sqlalchemy.orm.Mapped["Verification"] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "finishers"
     )
 

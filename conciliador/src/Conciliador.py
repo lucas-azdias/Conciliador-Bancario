@@ -209,7 +209,7 @@ class Conciliador():
             print(day_statement_entries)
 
             for row in day_statement_entries.to_dicts():
-                pass
+                print(row)
 
 
 if __name__ == "__main__":
