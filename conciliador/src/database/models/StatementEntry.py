@@ -65,7 +65,7 @@ def validate_type_on_change(
         target: StatementEntry
     ) -> None:
     if re.match("^PIX CREDITO(?!.*TRR IVAI COMERCIO DE COMBUST).*$", target.name) or \
-    (re.match("^TRANSFERENCIA.*$", target.name) and re.match("^\\d+$", target.value)):
+    (re.match("^TRANSFERENCIA.*$", target.name) and re.match("^\\d+$", str(target.value))):
         target.type = ["pix"]
     elif re.match("^DEPÓSITO.*$", target.name):
         target.type = ["deposit"]
@@ -85,5 +85,9 @@ def validate_type_on_change(
         target.type = ["card", "debit", "master"]
     elif re.match("^VENDAS CARTAO TIPO DEBITO.*CIELO-ELO.*$", target.name):
         target.type = ["card", "debit", "elo"]
+    elif re.match("^\\d+$", str(target.value)):
+        target.type = ["income"]
+    elif re.match("^-\\d+$", str(target.value)):
+        target.type = ["outcome"]
     else:
         target.type = None

@@ -8,8 +8,5 @@
 /.venv
 /archive
 /database
-/db
 /in
-/logs
 /out
-/summaries
