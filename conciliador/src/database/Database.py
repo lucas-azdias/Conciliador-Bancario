@@ -8,6 +8,9 @@ import typeguard
 import typing
 
 from . import BaseModel
+from . import ColumnOrdinationEnum
+from .join import Join
+from .join import JoinTypeEnum
 from .models import * # Build all ORM models into Base.metadata
 
 
@@ -40,9 +43,19 @@ class Database():
         self.__db_metadata.reflect(bind = self.__engine)
 
 
+    @staticmethod
+    def parse_column_name(
+            column_name: str
+        ) -> typing.Tuple[str, str]:
+        if not "." in column_name:
+            column_name = "." + column_name
+        table, _, column_name = column_name.partition(".")
+        return (table, column_name)
+
+
     def insert(
             self,
-            table_name: BaseModel.BaseModel | str,
+            table_name: typing.Type[BaseModel.BaseModel] | str,
             data: typing.Dict[str, typing.Any]
         ) -> typing.Tuple[int, ...]:
         if not self.has_table(table_name):
@@ -70,7 +83,7 @@ class Database():
 
     def extend(
             self,
-            table_name: BaseModel.BaseModel | str,
+            table_name: typing.Type[BaseModel.BaseModel] | str,
             data: polars.DataFrame
         ) -> typing.Tuple[int, ...]:
         if not self.has_table(table_name):
@@ -98,8 +111,15 @@ class Database():
 
     def read(
             self,
-            table_name: BaseModel.BaseModel | str,
-            **conditions: typing.Callable[[sqlalchemy.Column], sqlalchemy.ClauseElement]
+            table_name: typing.Type[BaseModel.BaseModel] | str,
+            columns: typing.Iterable[str] = [],
+            distinct: bool = False,
+            limit: int = 0,
+            offset: int = 0,
+            order_by: typing.Dict[str, ColumnOrdinationEnum.ColumnOrdinationEnum] = {},
+            group_by: typing.Iterable[str] = [],
+            joins: typing.Iterable[Join.Join] = [],
+            conditions: typing.Dict[str, typing.Callable[[sqlalchemy.orm.InstrumentedAttribute], sqlalchemy.ClauseElement]] = {}
         ) -> polars.DataFrame:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
@@ -107,19 +127,120 @@ class Database():
         with self.__sessionmaker() as session:
             try:
                 model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
-                query: sqlalchemy.orm.Query = session.query(model)
+                models: typing.Dict[str, typing.Type[BaseModel.BaseModel]] = {}
+                models[model.__tablename__] = model
+                for join in joins:
+                    if not join.left_table_name in models:
+                        models[join.left_table_name] = self.get_model(join.left_table_name)
+                    if not join.right_table_name in models:
+                        models[join.right_table_name] = self.get_model(join.right_table_name)
 
-                if conditions:
-                    for column_name, clause in conditions.items():
-                        column = getattr(model, column_name, None)
+                schema: typing.List[sqlalchemy.Column] = [column for model in models.values() for column in model.__table__.columns]
+                query: sqlalchemy.orm.Query = session.query(*schema)
+
+                # Apply joins
+                for join in joins:
+                    clause: typing.Callable[[BaseModel.BaseModel, BaseModel.BaseModel], sqlalchemy.ClauseElement] = join.clause
+                    join_type: JoinTypeEnum.JoinTypeEnum = join.type
+
+                    match(join_type):
+                        case JoinTypeEnum.JoinTypeEnum.INNER:
+                            query = query.join(
+                                models[join.right_table_name],
+                                clause(models[join.left_table_name], models[join.right_table_name]),
+                                isouter = False,
+                                full = False
+                            )
+
+                        case JoinTypeEnum.JoinTypeEnum.LEFT_OUTER:
+                            query = query.outerjoin(
+                                models[join.right_table_name],
+                                clause(models[join.left_table_name], models[join.right_table_name]),
+                                full = False
+                            )
+
+                        case JoinTypeEnum.JoinTypeEnum.RIGHT_OUTER:
+                            raise NotImplementedError("Not implemented support to right join (consider reversing the tables and using left join).")
+
+                        case JoinTypeEnum.JoinTypeEnum.FULL_OUTER:
+                            query = query.outerjoin(
+                                models[join.right_table_name],
+                                clause(models[join.left_table_name], models[join.right_table_name]),
+                                full = True
+                            )
+
+                        case JoinTypeEnum.JoinTypeEnum.CROSS:
+                            raise NotImplementedError("Not implemented support to cross join.")
+
+                # Apply column selection
+                if columns:
+                    selected_columns: typing.List[sqlalchemy.Column] = []
+                    for table_column_name in columns:
+                        table, column_name = self.parse_column_name(table_column_name)
+                        target: typing.Type[BaseModel.BaseModel] = models.get(table, model)
+                        column: typing.Optional[sqlalchemy.orm.InstrumentedAttribute] = getattr(target, column_name, None)
                         if not column:
-                            raise ValueError(f"Invalid column name \"{column_name}\" for table \"{model.__tablename__}\" was given.")
+                            raise ValueError(f"Invalid selection column \"{column_name}\" for table \"{target.__tablename__}\" was given.")
+
+                        selected_columns.append(column)
+
+                    string_schema: typing.List[str] = [f"{column.table.name}.{column.name}" for column in selected_columns]
+                    query = session.query(*selected_columns).select_from(query.subquery())
+
+                else:
+                    string_schema: typing.List[str] = [f"{column.table.name}.{column.name}" for column in schema]
+
+                # Apply conditions
+                if conditions:
+                    for table_column_name, clause in conditions.items():
+                        table, column_name = self.parse_column_name(table_column_name)
+                        target: typing.Type[BaseModel.BaseModel] = models.get(table, model)
+                        column: typing.Optional[sqlalchemy.orm.InstrumentedAttribute] = getattr(target, column_name, None)
+                        if not column:
+                            raise ValueError(f"Invalid condition column \"{column_name}\" for table \"{target.__tablename__}\" was given.")
                         query = query.filter(clause(column))
 
-                schema: typing.List[str] = [column.key for column in model.__table__.columns]
-                fetched: typing.List[BaseModel.BaseModel] = query.all()
+                # Apply option distinct
+                if distinct:
+                    query = query.distinct()
 
-                return polars.DataFrame([instance.to_dict() for instance in fetched], schema = schema)
+                # Apply option limit
+                if limit:
+                    if limit < 0:
+                        raise ValueError("Limit must be a positive integer.")
+                    query = query.limit(limit)
+
+                # Apply option offset
+                if offset:
+                    if offset < 0:
+                        raise ValueError("Offset must be a non-negative integer.")
+                    query = query.offset(offset)
+
+                # Apply option order By
+                if order_by:
+                    for column_name, column_ordination in order_by.items():
+                        table, column_name = self.parse_column_name(table_column_name)
+                        target: typing.Type[BaseModel.BaseModel] = models.get(table, model)
+                        column: typing.Optional[sqlalchemy.orm.InstrumentedAttribute] = getattr(target, column_name, None)
+                        if not column:
+                            raise ValueError(f"Invalid order_by column \"{column_name}\" for table \"{target.__tablename__}\".")
+                        query = query.order_by(getattr(column, column_ordination)())
+
+                # Apply option group By
+                if group_by:
+                    group_columns: typing.List[typing.Optional[sqlalchemy.orm.InstrumentedAttribute]] = []
+                    for column_name in group_by:
+                        table, column_name = self.parse_column_name(table_column_name)
+                        target: typing.Type[BaseModel.BaseModel] = models.get(table, model)
+                        column: typing.Optional[sqlalchemy.orm.InstrumentedAttribute] = getattr(target, column_name, None)
+                        if not column:
+                            raise ValueError(f"Invalid group_by column \"{column_name}\" for table \"{model.__tablename__}\".")
+                        group_columns.append(column)
+                    query = query.group_by(*group_columns)
+
+                fetched: typing.List[sqlalchemy.Row] = query.all()
+
+                return polars.DataFrame([dict(zip(string_schema, instance)) for instance in fetched], schema = string_schema)
 
             except Exception as e:
                 session.rollback()
@@ -131,9 +252,9 @@ class Database():
 
     def update(
             self,
-            table_name: BaseModel.BaseModel | str,
+            table_name: typing.Type[BaseModel.BaseModel] | str,
             data: typing.Dict[str, typing.Any],
-            **conditions: typing.Callable[[sqlalchemy.Column], sqlalchemy.ClauseElement]
+            **conditions: typing.Callable[[sqlalchemy.orm.InstrumentedAttribute], sqlalchemy.ClauseElement]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
@@ -173,8 +294,8 @@ class Database():
 
     def delete(
             self,
-            table_name: BaseModel.BaseModel | str,
-            **conditions: typing.Callable[[sqlalchemy.Column], sqlalchemy.ClauseElement]
+            table_name: typing.Type[BaseModel.BaseModel] | str,
+            **conditions: typing.Callable[[sqlalchemy.orm.InstrumentedAttribute], sqlalchemy.ClauseElement]
         ) -> int:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
@@ -219,7 +340,10 @@ class Database():
         raise TypeError("Invalid table name type.")
 
 
-    def get_model(self, table_name: str) -> typing.Type[BaseModel.BaseModel]:
+    def get_model(
+            self,
+            table_name: str
+        ) -> typing.Type[BaseModel.BaseModel]:
         for subcls in BaseModel.BaseModel.__subclasses__():
             if hasattr(subcls, "__tablename__") and subcls.__tablename__ == table_name:
                 return subcls
@@ -273,7 +397,7 @@ class Database():
             if columns_to_create and can_fill:
                 try:
                     for column_name in columns_to_create:
-                        column: sqlalchemy.Column = self.__orm_metadata.tables[table_name].c[column_name]
+                        column: sqlalchemy.orm.InstrumentedAttribute = self.__orm_metadata.tables[table_name].c[column_name]
                         with self.__engine.connect() as conn:
                             conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column.type};")
                 except Exception as e:

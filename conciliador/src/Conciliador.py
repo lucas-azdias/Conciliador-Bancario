@@ -6,9 +6,9 @@ import typeguard
 import typing
 
 from .database import Database
+from .database.join import Join, JoinTypeEnum
 from .loaders import ReportLoader, StatementLoader
 from .utils import Currency
-from .utils.unique_iter import UniqueList
 
 
 @typeguard.typechecked
@@ -174,48 +174,65 @@ class Conciliador():
         # TODO
         # To link finisher and statement entry:
         current_date = start_date - datetime.timedelta(days = 1)
-        while current_date <= end_date:
+        while current_date < end_date:
             current_date += datetime.timedelta(days = 1)
 
-            day_reports_ids: typing.List[int] = self.__database.read(
-                "report", 
-                start_time = lambda x: sqlalchemy.and_(
-                    x >= datetime.datetime.min.replace(current_date.year, current_date.month, current_date.day),
-                    x <= datetime.datetime.max.replace(current_date.year, current_date.month, current_date.day)
-                )
-            )["id"].to_list()
-            if not day_reports_ids:
-                continue
-            day_finishers: polars.DataFrame = self.__database.read(
-                "finisher",
-                report_id = lambda x: x.in_(day_reports_ids)
-            )
-            if day_finishers.is_empty():
-                continue
-            print(day_finishers.to_pandas().head(100))
+            types: typing.List[str] = []
+            print(self.__database.read(
+                "report",
+                # ["finisher.type"],
+                # distinct = True,
+                joins = [
+                    Join.Join("report", "finisher", lambda x, y: x.id == y.report_id, JoinTypeEnum.JoinTypeEnum.INNER),
+                    # Join.Join("statement_entry", lambda x, y: x.type == y.type, JoinTypeEnum.JoinTypeEnum.FULL_OUTER),
+                    # Join.Join("statement", lambda x, y: x.statement_id == y.id, JoinTypeEnum.JoinTypeEnum.INNER),
+                ],
+                conditions = {
+                    "report.start_time": lambda x: sqlalchemy.and_(
+                        x >= datetime.datetime.min.replace(current_date.year, current_date.month, current_date.day),
+                        x <= datetime.datetime.max.replace(current_date.year, current_date.month, current_date.day)
+                    ),
+                    # "statement.date": lambda x: x == current_date,
+                }
+            ))
+            # day_reports_ids: typing.List[int] = self.__database.read(
+            #     "report", 
+            #     start_time = lambda x: sqlalchemy.and_(
+            #         x >= datetime.datetime.min.replace(current_date.year, current_date.month, current_date.day),
+            #         x <= datetime.datetime.max.replace(current_date.year, current_date.month, current_date.day)
+            #     )
+            # )["id"].to_list()
+            # if not day_reports_ids:
+            #     continue
+            # day_finishers: polars.DataFrame = self.__database.read(
+            #     "finisher",
+            #     report_id = lambda x: x.in_(day_reports_ids)
+            # )
+            # if day_finishers.is_empty():
+            #     continue
+            # print(day_finishers.to_pandas().head(100))
 
-            day_statement_ids: typing.List[int] = self.__database.read(
-                "statement",
-                date = lambda x: x == current_date
-            )["id"].to_list()
-            if not day_statement_ids:
-                continue
-            day_statement_id: int = day_statement_ids[0]
-            day_statement_entries: polars.DataFrame = self.__database.read(
-                "statement_entry",
-                statement_id = lambda x: x == day_statement_id
-            )
-            if day_statement_entries.is_empty():
-                continue
-            print(day_statement_entries.to_pandas().head(100))
+            # day_statement_ids: typing.List[int] = self.__database.read(
+            #     "statement",
+            #     date = lambda x: x == current_date
+            # )["id"].to_list()
+            # if not day_statement_ids:
+            #     continue
+            # day_statement_id: int = day_statement_ids[0]
+            # day_statement_entries: polars.DataFrame = self.__database.read(
+            #     "statement_entry",
+            #     statement_id = lambda x: x == day_statement_id
+            # )
+            # if day_statement_entries.is_empty():
+            #     continue
+            # print(day_statement_entries.to_pandas().head(100))
 
-            types = UniqueList.UniqueList()
-            types.extend(day_finishers["type"].to_list())
-            types.extend(day_statement_entries["type"].to_list())
-            print(types)
+            # types = UniqueList.UniqueList()
+            # types.extend(day_finishers["type"].to_list())
+            # types.extend(day_statement_entries["type"].to_list())
 
-            for row in day_statement_entries.to_dicts():
-                print(row)
+            # for type in types:
+            #     print(type)
 
 
 if __name__ == "__main__":

@@ -1,9 +1,11 @@
+import typeguard
 import typing
 
 
 T = typing.TypeVar("T")
 
 
+@typeguard.typechecked
 class UniqueList(typing.Generic[T], typing.List[T]):
 
     def __init__(

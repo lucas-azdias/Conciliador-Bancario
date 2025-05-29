@@ -1,9 +1,11 @@
+import typeguard
 import typing
 
 
 T = typing.TypeVar("T")
 
 
+@typeguard.typechecked
 class UniqueTuple(typing.Generic[T], typing.Tuple[T]):
 
     def __new__(
