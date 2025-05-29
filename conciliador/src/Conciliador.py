@@ -5,9 +5,10 @@ import sqlalchemy
 import typeguard
 import typing
 
-from . import Currency
 from .database import Database
 from .loaders import ReportLoader, StatementLoader
+from .utils import Currency
+from .utils.unique_iter import UniqueList
 
 
 @typeguard.typechecked
@@ -191,7 +192,7 @@ class Conciliador():
             )
             if day_finishers.is_empty():
                 continue
-            print(day_finishers)
+            print(day_finishers.to_pandas().head(100))
 
             day_statement_ids: typing.List[int] = self.__database.read(
                 "statement",
@@ -206,7 +207,12 @@ class Conciliador():
             )
             if day_statement_entries.is_empty():
                 continue
-            print(day_statement_entries)
+            print(day_statement_entries.to_pandas().head(100))
+
+            types = UniqueList.UniqueList()
+            types.extend(day_finishers["type"].to_list())
+            types.extend(day_statement_entries["type"].to_list())
+            print(types)
 
             for row in day_statement_entries.to_dicts():
                 print(row)
