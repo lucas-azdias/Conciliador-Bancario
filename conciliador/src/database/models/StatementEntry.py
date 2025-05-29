@@ -68,7 +68,7 @@ def validate_type_on_change(
     (re.match("^TRANSFERENCIA.*$", target.name) and re.match("^\\d+$", str(target.value))):
         target.type = ["pix"]
     elif re.match("^DEPÓSITO.*$", target.name):
-        target.type = ["deposit"]
+        target.type = ["cash"]
     elif re.match("^VENDAS CARTAO TIPO CREDITO.*CIELO-VISA.*$", target.name):
         target.type = ["card", "credit", "visa"]
     elif re.match("^VENDAS CARTAO TIPO CREDITO.*CIELO-MASTER.*$", target.name):

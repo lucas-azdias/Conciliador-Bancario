@@ -61,9 +61,6 @@ class Database():
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
-        if not data:
-            raise Exception("Missing data to insert on table.")
-
         with self.__sessionmaker() as session:
             try:
                 model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
@@ -88,9 +85,6 @@ class Database():
         ) -> typing.Tuple[int, ...]:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
-
-        if data.is_empty():
-            raise Exception("Missing data to extend table.")
 
         with self.__sessionmaker() as session:
             try:

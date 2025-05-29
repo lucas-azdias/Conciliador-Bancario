@@ -29,7 +29,14 @@ class Verification(BaseModel.BaseModel):
         sqlalchemy.JSON,
         nullable = False
     )
-    is_verified: sqlalchemy.orm.Mapped[bool]
+    verified_on: sqlalchemy.orm.Mapped[datetime.datetime] = sqlalchemy.orm.mapped_column(
+        default = datetime.datetime.now,
+        nullable = False
+    )
+    is_verified: sqlalchemy.orm.Mapped[bool] = sqlalchemy.orm.mapped_column(
+        default = False,
+        nullable = False
+    )
 
 
     # Computed columns
