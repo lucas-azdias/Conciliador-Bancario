@@ -1,5 +1,6 @@
 import datetime
 import sqlalchemy
+import sqlalchemy.ext.hybrid
 import sqlalchemy.orm
 import typeguard
 import typing
@@ -22,7 +23,6 @@ class Verification(BaseModel.BaseModel):
         autoincrement = True
     )
     date: sqlalchemy.orm.Mapped[datetime.date] = sqlalchemy.orm.mapped_column(
-        unique = True,
         nullable = False
     )
     type: sqlalchemy.orm.Mapped[typing.Optional[typing.List[str]]] = sqlalchemy.orm.mapped_column(
@@ -36,6 +36,12 @@ class Verification(BaseModel.BaseModel):
     is_verified: sqlalchemy.orm.Mapped[bool] = sqlalchemy.orm.mapped_column(
         default = False,
         nullable = False
+    )
+
+
+    # Constraints
+    __table_args__ = (
+        sqlalchemy.UniqueConstraint("date", "type", name = "unique_date_type"),
     )
 
 
