@@ -101,7 +101,6 @@ class Conciliador():
             ]
         )
 
-        print(finishers_df)
         # Extend database with finishers
         self.__database.extend("finisher", finishers_df)
 
@@ -173,31 +172,21 @@ class Conciliador():
             start_date: datetime.date,
             end_date: datetime.date
         ) -> None:
-        # TODO
-        # To link finisher and statement entry:
         current_date = start_date - datetime.timedelta(days = 1)
         while current_date < end_date:
             current_date += datetime.timedelta(days = 1)
             types: UniqueList.UniqueList[str] = UniqueList.UniqueList()
 
             day_finishers: polars.DataFrame = self.__database.read(
-                "report",
-                distinct = True,
-                joins = [
-                    Join.Join("report", "finisher", lambda x, y: x.id == y.report_id, JoinTypeEnum.JoinTypeEnum.INNER),
-                ],
+                "finisher",
                 conditions = {
-                    "report.start_time": lambda x: sqlalchemy.and_(
-                        x >= datetime.datetime.min.replace(current_date.year, current_date.month, current_date.day),
-                        x <= datetime.datetime.max.replace(current_date.year, current_date.month, current_date.day)
-                    ),
+                    "finisher.payment_date": lambda x: x == current_date,
                 }
             )
             types.extend(day_finishers["finisher.type"].to_list())
 
             day_statement_entries: polars.DataFrame = self.__database.read(
                 "statement",
-                distinct = True,
                 joins = [
                     Join.Join("statement", "statement_entry", lambda x, y: x.id == y.statement_id, JoinTypeEnum.JoinTypeEnum.INNER),
                 ],
@@ -218,9 +207,12 @@ class Conciliador():
                 )[0]
                 type_day_finishers = day_finishers.filter(polars.col("finisher.type") == type)
                 type_day_statement_entries = day_statement_entries.filter(polars.col("statement_entry.type") == type)
+                print(current_date)
+                print(sum(type_day_finishers["finisher.value"].to_list()))
+                print(sum(type_day_statement_entries["statement_entry.value"].to_list()))
                 print(type_day_finishers)
                 print(type_day_statement_entries)
-                # TODO FAZER UMA COLUNA DE DATA_VIRTUAL em FINISHER -> de acordo com o tipo e com a data atual define mapeia uma data de verificacao
+                # TODO FAZER UMA COLUNA PAYMENT_VALUE -> VALOR que será pago após correção por taxa válida (taxa válida será tabela com yield, type, start_time); end_time definido por haver outra com start_time maior
 
 
 if __name__ == "__main__":

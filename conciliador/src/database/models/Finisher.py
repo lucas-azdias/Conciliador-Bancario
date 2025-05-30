@@ -41,7 +41,7 @@ class Finisher(BaseModel.BaseModel):
         sqlalchemy.JSON,
         nullable = True
     )
-    virtual_date: sqlalchemy.orm.Mapped[datetime.date] = sqlalchemy.orm.mapped_column(
+    payment_date: sqlalchemy.orm.Mapped[datetime.date] = sqlalchemy.orm.mapped_column(
         nullable = True
     )
 
@@ -76,14 +76,8 @@ def validate_on_change(
         connection: sqlalchemy.Connection,
         target: Finisher
     ) -> None:
-    # with sqlalchemy.orm.Session(bind = connection) as session:
-    #     if target.report is None and target.report_id is not None:
-    #         target.report = session.get(Report, target.report_id)
-
-    # if target.report is None:
-    #     return
     if not target.report_id:
-        return
+        raise Exception("No \"report_id\" was given.")
 
     reports_table: sqlalchemy.Table = sqlalchemy.table(
         "report",
@@ -96,68 +90,68 @@ def validate_on_change(
     result: sqlalchemy.Row = connection.execute(query).first()
 
     if not result:
-        return
+        raise Exception("Unable to recover \"report\" values through \"report_id\".")
 
     report_start_time, report_shift = result
     report_date = datetime.datetime.strptime(report_start_time, "%Y-%m-%d %H:%M:%S.%f").date()
 
     if re.match("^RECEBIMENTO DINHEIRO(?!.*RECEITAS)$", target.name):
         target.type = ["cash"]
-        target.virtual_date = report_date + datetime.timedelta(days = (1 if report_shift > 0 else 0))
+        target.payment_date = report_date + datetime.timedelta(days = (1 if report_shift > 0 else 0))
     elif re.match("^.*RECEITAS$", target.name):
         target.type = ["revenue"]
-        target.virtual_date = None
+        target.payment_date = None
     elif re.match("^USO E CONSUMO$", target.name):
         target.type = ["usage_and_consumption"]
-        target.virtual_date = None
+        target.payment_date = None
     elif re.match("^PRAZO$", target.name):
         target.type = ["installment"]
-        target.virtual_date = None
+        target.payment_date = None
     elif re.match("^PIX.*$", target.name):
         target.type = ["pix"]
-        target.virtual_date = report_date
+        target.payment_date = report_date
     elif re.match("^VISA CR[EÉ]DITO$", target.name):
         target.type = ["card", "credit", "visa"]
-        target.virtual_date = report_date + datetime.timedelta(days = 30)
+        target.payment_date = report_date + datetime.timedelta(days = 30)
     elif re.match("^MASTER CR[EÉ]DITO$", target.name):
         target.type = ["card", "credit", "master"]
-        target.virtual_date = report_date + datetime.timedelta(days = 30)
+        target.payment_date = report_date + datetime.timedelta(days = 30)
     elif re.match("^ELO CR[EÉ]DITO$", target.name):
         target.type = ["card", "credit", "elo"]
-        target.virtual_date = report_date + datetime.timedelta(days = 30)
+        target.payment_date = report_date + datetime.timedelta(days = 30)
     elif re.match("^HIPER$", target.name):
         target.type = ["card", "credit", "hipercard"]
-        target.virtual_date = report_date + datetime.timedelta(days = 30)
+        target.payment_date = report_date + datetime.timedelta(days = 30)
     elif re.match("^.*AMEX$", target.name):
         target.type = ["card", "credit", "amex"]
-        target.virtual_date = report_date + datetime.timedelta(days = 30)
+        target.payment_date = report_date + datetime.timedelta(days = 30)
     elif re.match("^PR[EÉ][ -]?PAGO VISA CR[EÉ]DITO$", target.name):
         target.type = ["card", "credit", "visa"]
-        target.virtual_date = report_date + datetime.timedelta(days = 2)
+        target.payment_date = report_date + datetime.timedelta(days = 2)
     elif re.match("^PR[EÉ][ -]?PAGO MASTER CR[EÉ]DITO$", target.name):
         target.type = ["card", "credit", "master"]
-        target.virtual_date = report_date + datetime.timedelta(days = 2)
+        target.payment_date = report_date + datetime.timedelta(days = 2)
     elif re.match("^PR[EÉ][ -]?PAGO ELO CR[EÉ]DITO$", target.name):
         target.type = ["card", "credit", "elo"]
-        target.virtual_date = report_date + datetime.timedelta(days = 2)
+        target.payment_date = report_date + datetime.timedelta(days = 2)
     elif re.match("^VISA D[EÉ]BITO$", target.name):
         target.type = ["card", "debit", "visa"]
-        target.virtual_date = report_date + datetime.timedelta(days = 1)
+        target.payment_date = report_date + datetime.timedelta(days = 1)
     elif re.match("^MASTER(?:CARD)? D[EÉ]BITO$", target.name):
         target.type = ["card", "debit", "master"]
-        target.virtual_date = report_date + datetime.timedelta(days = 1)
+        target.payment_date = report_date + datetime.timedelta(days = 1)
     elif re.match("^ELO D[EÉ]BITO$", target.name):
         target.type = ["card", "debit", "elo"]
-        target.virtual_date = report_date + datetime.timedelta(days = 1)
+        target.payment_date = report_date + datetime.timedelta(days = 1)
     elif re.match("^PR[EÉ][ -]?PAGO VISA D[EÉ]BITO$", target.name):
         target.type = ["card", "debit", "visa"]
-        target.virtual_date = report_date + datetime.timedelta(days = 1)
+        target.payment_date = report_date + datetime.timedelta(days = 1)
     elif re.match("^PR[EÉ][ -]?PAGO MASTER(?:CARD)? D[EÉ]BITO$", target.name):
         target.type = ["card", "debit", "master"]
-        target.virtual_date = report_date + datetime.timedelta(days = 1)
+        target.payment_date = report_date + datetime.timedelta(days = 1)
     elif re.match("^PR[EÉ][ -]?PAGO ELO D[EÉ]BITO$", target.name):
         target.type = ["card", "debit", "elo"]
-        target.virtual_date = report_date + datetime.timedelta(days = 1)
+        target.payment_date = report_date + datetime.timedelta(days = 1)
     else:
         target.type = None
-        target.virtual_date = None
+        target.payment_date = None
