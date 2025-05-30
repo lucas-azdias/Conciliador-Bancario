@@ -3,6 +3,7 @@
 
 *.csv
 *.db
+*.db-journal
 .env*
 
 /.venv

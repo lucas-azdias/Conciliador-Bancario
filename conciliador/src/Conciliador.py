@@ -101,6 +101,7 @@ class Conciliador():
             ]
         )
 
+        print(finishers_df)
         # Extend database with finishers
         self.__database.extend("finisher", finishers_df)
 

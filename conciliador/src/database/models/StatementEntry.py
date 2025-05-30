@@ -57,9 +57,10 @@ class StatementEntry(BaseModel.BaseModel):
 
 
 # Register event listeners
+@typeguard.typechecked
 @sqlalchemy.event.listens_for(StatementEntry, "before_insert")
 @sqlalchemy.event.listens_for(StatementEntry, "before_update")
-def validate_type_on_change(
+def validate_on_change(
         mapper: sqlalchemy.orm.Mapper,
         connection: sqlalchemy.Connection,
         target: StatementEntry
