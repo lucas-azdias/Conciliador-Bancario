@@ -22,11 +22,11 @@ class Verification(BaseModel.BaseModel):
         nullable = False,
         autoincrement = True
     )
-    date: sqlalchemy.orm.Mapped[datetime.date] = sqlalchemy.orm.mapped_column(
+    type_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.ForeignKey("type.id"),
         nullable = False
     )
-    type: sqlalchemy.orm.Mapped[typing.Optional[typing.List[str]]] = sqlalchemy.orm.mapped_column(
-        sqlalchemy.JSON,
+    date: sqlalchemy.orm.Mapped[datetime.date] = sqlalchemy.orm.mapped_column(
         nullable = False
     )
     verified_on: sqlalchemy.orm.Mapped[datetime.datetime] = sqlalchemy.orm.mapped_column(
@@ -41,7 +41,7 @@ class Verification(BaseModel.BaseModel):
 
     # Constraints
     __table_args__ = (
-        sqlalchemy.UniqueConstraint("date", "type", name = "unique_date_type"),
+        sqlalchemy.UniqueConstraint("type_id", "date", name = "unique_type_id_date"),
     )
 
 
@@ -56,6 +56,9 @@ class Verification(BaseModel.BaseModel):
 
 
     # Relationships
+    type: sqlalchemy.orm.Mapped["Type"] = sqlalchemy.orm.relationship( # type: ignore
+        back_populates = "verifications"
+    )
     finishers: sqlalchemy.orm.Mapped[typing.List["Finisher"]] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "verification"
     )

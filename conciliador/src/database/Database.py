@@ -9,6 +9,7 @@ import typing
 
 from . import BaseModel
 from . import ColumnOrdinationEnum
+from . import ModelsConfig
 from .join import Join
 from .join import JoinTypeEnum
 from .models import * # Build all ORM models into Base.metadata
@@ -37,6 +38,12 @@ class Database():
 
         # Validate schema from database and schema defined via ORM
         self.sync_schema(can_fill = can_fill, can_purge = can_purge, should_raise_permission_errors = True)
+
+        # Setup models
+        ModelsConfig.ModelsConfig.setup_models(self.__sessionmaker())
+
+        # Load all event listeners
+        ModelsConfig.ModelsConfig.activate_listeners()
 
         # Update elements after sync
         self.__inspector: sqlalchemy.Inspector = sqlalchemy.inspect(self.__engine)

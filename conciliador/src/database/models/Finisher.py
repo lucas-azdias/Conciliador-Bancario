@@ -50,7 +50,6 @@ class Finisher(BaseModel.BaseModel):
     # Constraints
     __table_args__ = (
         sqlalchemy.UniqueConstraint("report_id", "name", name = "unique_report_id_name"),
-        sqlalchemy.UniqueConstraint("report_id", "type_id", name = "unique_report_id_type_id"),
     )
 
 

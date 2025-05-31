@@ -1,9 +1,17 @@
+import re
 import sqlalchemy
 import sqlalchemy.orm
 import typeguard
 import typing
 
 from .. import BaseModel
+
+
+TYPES_NAMES: typing.Tuple[str, ...] = (
+    "cash", "revenue", "usage_and_consumption", "installment", "pix",
+    "card.debit.visa", "card.debit.master", "card.debit.elo",
+    "card.credit.visa", "card.credit.master", "card.credit.elo", "card.credit.hipercard", "card.credit.amex",
+)
 
 
 @typeguard.typechecked
@@ -34,5 +42,8 @@ class Type(BaseModel.BaseModel):
         back_populates = "type"
     )
     rates: sqlalchemy.orm.Mapped[typing.List["Rate"]] = sqlalchemy.orm.relationship( # type: ignore
+        back_populates = "type"
+    )
+    verifications: sqlalchemy.orm.Mapped[typing.List["Verification"]] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "type"
     )

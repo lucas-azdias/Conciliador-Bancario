@@ -1,9 +1,7 @@
 import datetime
 import pathlib
 import polars
-import sqlalchemy
 import typeguard
-import typing
 
 from .database import Database
 from .database.join import Join, JoinTypeEnum
@@ -97,7 +95,6 @@ class Conciliador():
                 polars.col("id").alias("report_id"),
                 polars.col("name").alias("name"),
                 polars.col("value").alias("value"),
-                polars.col("name").alias("type"),
             ]
         )
 
@@ -175,7 +172,10 @@ class Conciliador():
         current_date = start_date - datetime.timedelta(days = 1)
         while current_date < end_date:
             current_date += datetime.timedelta(days = 1)
-            types: UniqueList.UniqueList[str] = UniqueList.UniqueList()
+
+            types: polars.DataFrame = self.__database.read(
+                "type"
+            )
 
             day_finishers: polars.DataFrame = self.__database.read(
                 "finisher",
@@ -183,7 +183,6 @@ class Conciliador():
                     "finisher.payment_date": lambda x: x == current_date,
                 }
             )
-            types.extend(day_finishers["finisher.type"].to_list())
 
             day_statement_entries: polars.DataFrame = self.__database.read(
                 "statement",
@@ -194,19 +193,19 @@ class Conciliador():
                     "statement.date": lambda x: x == current_date,
                 }
             )
-            types.extend(day_statement_entries["statement_entry.type"].to_list())
 
-            for type in types:
+            for type in types.to_dicts():
+                type_id = type["type.id"]
                 self.__database.delete("verification", date = lambda x: x == current_date)
                 verification_id = self.__database.insert(
                     "verification",
                     {
                         "date": current_date,
-                        "type": type,
+                        "type_id": type_id,
                     }
                 )[0]
-                type_day_finishers = day_finishers.filter(polars.col("finisher.type") == type)
-                type_day_statement_entries = day_statement_entries.filter(polars.col("statement_entry.type") == type)
+                type_day_finishers = day_finishers.filter(polars.col("finisher.type_id") == type_id)
+                type_day_statement_entries = day_statement_entries.filter(polars.col("statement_entry.type_id") == type_id)
                 print(current_date)
                 print(sum(type_day_finishers["finisher.value"].to_list()))
                 print(sum(type_day_statement_entries["statement_entry.value"].to_list()))
