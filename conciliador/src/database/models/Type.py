@@ -11,6 +11,7 @@ TYPES_NAMES: typing.Tuple[str, ...] = (
     "cash", "revenue", "usage_and_consumption", "installment", "pix",
     "card.debit.visa", "card.debit.master", "card.debit.elo",
     "card.credit.visa", "card.credit.master", "card.credit.elo", "card.credit.hipercard", "card.credit.amex",
+    "income", "outcome",
 )
 
 

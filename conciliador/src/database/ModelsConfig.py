@@ -6,7 +6,7 @@ import sqlalchemy.orm
 import typeguard
 import typing
 
-from .models import Finisher, Rate, Report, Type
+from .models import Finisher, Rate, Report, StatementEntry, Type
 
 
 @typeguard.typechecked
@@ -39,6 +39,8 @@ class ModelsConfig():
 
             sqlalchemy.event.listen(Rate.Rate, event_name, ModelsConfig.listener_rate_on_change)
             sqlalchemy.event.listen(Finisher.Finisher, event_name, ModelsConfig.listener_rate_finisher_on_change)
+
+            sqlalchemy.event.listen(StatementEntry.StatementEntry, event_name, ModelsConfig.listener_statement_entry_on_change)
 
 
     @staticmethod
@@ -85,6 +87,8 @@ class ModelsConfig():
 
         name: str = target.name
 
+        type_id: typing.Optional[int]
+        payment_date: typing.Optional[datetime.date]
         if re.match("^RECEBIMENTO DINHEIRO(?!.*RECEITAS)$", name):
             type_id = Type.TYPES_NAMES.index("cash") + 1
             payment_date = report_date + datetime.timedelta(days = (1 if report_shift > 0 else 0))
@@ -100,6 +104,7 @@ class ModelsConfig():
         elif re.match("^PIX.*$", name):
             type_id = Type.TYPES_NAMES.index("pix") + 1
             payment_date = report_date
+
         elif re.match("^VISA CR[EÉ]DITO$", name):
             type_id = Type.TYPES_NAMES.index("card.credit.visa") + 1
             payment_date = report_date + datetime.timedelta(days = 30)
@@ -115,6 +120,7 @@ class ModelsConfig():
         elif re.match("^.*AMEX$", name):
             type_id = Type.TYPES_NAMES.index("card.credit.amex") + 1
             payment_date = report_date + datetime.timedelta(days = 30)
+
         elif re.match("^PR[EÉ][ -]?PAGO VISA CR[EÉ]DITO$", name):
             type_id = Type.TYPES_NAMES.index("card.credit.visa") + 1
             payment_date = report_date + datetime.timedelta(days = 2)
@@ -124,6 +130,7 @@ class ModelsConfig():
         elif re.match("^PR[EÉ][ -]?PAGO ELO CR[EÉ]DITO$", name):
             type_id = Type.TYPES_NAMES.index("card.credit.elo") + 1
             payment_date = report_date + datetime.timedelta(days = 2)
+
         elif re.match("^VISA D[EÉ]BITO$", name):
             type_id = Type.TYPES_NAMES.index("card.debit.visa") + 1
             payment_date = report_date + datetime.timedelta(days = 1)
@@ -133,6 +140,7 @@ class ModelsConfig():
         elif re.match("^ELO D[EÉ]BITO$", name):
             type_id = Type.TYPES_NAMES.index("card.debit.elo") + 1
             payment_date = report_date + datetime.timedelta(days = 1)
+
         elif re.match("^PR[EÉ][ -]?PAGO VISA D[EÉ]BITO$", name):
             type_id = Type.TYPES_NAMES.index("card.debit.visa") + 1
             payment_date = report_date + datetime.timedelta(days = 1)
@@ -142,6 +150,7 @@ class ModelsConfig():
         elif re.match("^PR[EÉ][ -]?PAGO ELO D[EÉ]BITO$", name):
             type_id = Type.TYPES_NAMES.index("card.debit.elo") + 1
             payment_date = report_date + datetime.timedelta(days = 1)
+
         else:
             type_id = None
             payment_date = None
@@ -213,3 +222,60 @@ class ModelsConfig():
 
         if not key in session.identity_map:
             sqlalchemy.orm.attributes.set_committed_value(target, "payment_value", payment_value)
+
+
+    @staticmethod
+    def listener_statement_entry_on_change(
+            mapper: sqlalchemy.orm.Mapper,
+            connection: sqlalchemy.Connection,
+            target: StatementEntry.StatementEntry,
+            **kwargs: typing.Any
+        ) -> None:
+        session: sqlalchemy.orm.Session = sqlalchemy.orm.session.object_session(target)
+
+        name: str = target.name
+        str_value: str = str(target.value)
+
+        type_id: typing.Optional[int]
+        if re.match("^DEPÓSITO.*$", name):
+            type_id = Type.TYPES_NAMES.index("cash") + 1
+        elif re.match("^PIX CREDITO(?!.*TRR IVAI COMERCIO DE COMBUST).*$", name) or \
+        (re.match("^TRANSFERENCIA.*$", name) and re.match("^\\d+$", str_value)):
+            type_id = Type.TYPES_NAMES.index("pix") + 1
+
+        elif re.match("^VENDAS CARTAO TIPO CREDITO.*CIELO-VISA.*$", name):
+            type_id = Type.TYPES_NAMES.index("card.credit.visa") + 1
+        elif re.match("^VENDAS CARTAO TIPO CREDITO.*CIELO-MASTER.*$", name):
+            type_id = Type.TYPES_NAMES.index("card.credit.master") + 1
+        elif re.match("^VENDAS CARTAO TIPO CREDITO.*CIELO-ELO.*$", name):
+            type_id = Type.TYPES_NAMES.index("card.credit.elo") + 1
+        elif re.match("^VENDAS CARTAO TIPO CREDITO.*CIELO-HIPERCA.*$", name):
+            type_id = Type.TYPES_NAMES.index("card.credit.hipercard") + 1
+        elif re.match("^VENDAS CARTAO TIPO CREDITO.*CIELO-AMERICA.*$", name):
+            type_id = Type.TYPES_NAMES.index("card.credit.amex") + 1
+
+        elif re.match("^VENDAS CARTAO TIPO DEBITO.*CIELO-VISA.*$", name):
+            type_id = Type.TYPES_NAMES.index("card.debit.visa") + 1
+        elif re.match("^VENDAS CARTAO TIPO DEBITO.*CIELO-MAESTRO.*$", name):
+            type_id = Type.TYPES_NAMES.index("card.debit.master") + 1
+        elif re.match("^VENDAS CARTAO TIPO DEBITO.*CIELO-ELO.*$", name):
+            type_id = Type.TYPES_NAMES.index("card.debit.elo") + 1
+
+        elif re.match("^\\d+$", str_value):
+            type_id = Type.TYPES_NAMES.index("income") + 1
+        elif re.match("^-\\d+$", str_value):
+            type_id = Type.TYPES_NAMES.index("outcome") + 1
+
+        else:
+            type_id = None
+
+        key: sqlalchemy.CursorResult = connection.execute(
+            StatementEntry.StatementEntry.__table__.update().values(
+                type_id = type_id,
+            ).where(
+                StatementEntry.StatementEntry.id == target.id
+            )
+        )
+
+        if not key in session.identity_map:
+            sqlalchemy.orm.attributes.set_committed_value(target, "type_id", type_id)

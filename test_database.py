@@ -29,6 +29,13 @@ with Session(engine) as session:
     session.add_all([report1, report2])
     session.commit()
 
+    # Create Statements
+    statement1 = Statement.Statement(
+        date=date(2025, 2, 19)
+    )
+    session.add_all([statement1])
+    session.commit()
+
     # Create Rates
     rate1 = Rate.Rate(rate=0.02, start_time=datetime(2000, 1, 1), type_id=1)
     session.add_all([rate1])
@@ -41,11 +48,21 @@ with Session(engine) as session:
     session.add_all([finisher1, finisher2, finisher3])
     session.commit()
 
+    # Create StatementEntries
+    statemententry1 = StatementEntry.StatementEntry(statement_id=statement1.id, name="DEPÓSITO", value=6700)
+    statemententry2 = StatementEntry.StatementEntry(statement_id=statement1.id, name="TRANSFERÊNCIA", value=18300)
+    session.add_all([statemententry1, statemententry2])
+    session.commit()
+
     # Query all tables
     print("\nAll Reports:")
     for report in session.query(Report.Report).all():
         print(f"Report(id={report.id}, shift={report.shift}, employee={report.employee}, "
               f"start_time={report.start_time}, end_time={report.end_time})")
+
+    print("\nAll Statements:")
+    for statement in session.query(Statement.Statement).all():
+        print(f"Statement(id={statement.id}, date={statement.date})")
 
     print("\nAll Rates:")
     for rate in session.query(Rate.Rate).all():
@@ -56,6 +73,11 @@ with Session(engine) as session:
     for finisher in session.query(Finisher.Finisher).all():
        print(f"Finisher(id={finisher.id}, report_id={finisher.report_id}, name={finisher.name}, "
               f"value={finisher.value}, type={finisher.type}, payment_date={finisher.payment_date}, payment_value={finisher.payment_value})")
+
+    print("\nAll StatementEntry:")
+    for statement_entry in session.query(StatementEntry.StatementEntry).all():
+       print(f"StatementEntry(id={statement_entry.id}, statement_id={statement_entry.statement_id}, name={statement_entry.name}, "
+              f"value={statement_entry.value}, type={statement_entry.type})")
 
     print("\nINNER JOIN Results (Report and Finisher):")
     query = session.query(Report.Report, Finisher.Finisher).join(Finisher.Finisher, Report.Report.id == Finisher.Finisher.report_id)
@@ -68,6 +90,8 @@ with Session(engine) as session:
     finisher2.name = "ELO CRÉDITO"
     rate1 = session.get(Rate.Rate, 1)
     rate1.rate = 0.05
+    statemententry1 = session.get(StatementEntry.StatementEntry, 1)
+    statemententry1.name = "PIX CREDITO: JULIANO"
     session.commit()
 
     print("\nAll Rates:")
@@ -79,3 +103,8 @@ with Session(engine) as session:
     for finisher in session.query(Finisher.Finisher).all():
        print(f"Finisher(id={finisher.id}, report_id={finisher.report_id}, name={finisher.name}, "
               f"value={finisher.value}, type={finisher.type}, payment_date={finisher.payment_date}, payment_value={finisher.payment_value})")
+
+    print("\nAll StatementEntry:")
+    for statement_entry in session.query(StatementEntry.StatementEntry).all():
+       print(f"StatementEntry(id={statement_entry.id}, statement_id={statement_entry.statement_id}, name={statement_entry.name}, "
+              f"value={statement_entry.value}, type={statement_entry.type})")
