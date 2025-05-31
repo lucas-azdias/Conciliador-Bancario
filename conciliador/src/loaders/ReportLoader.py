@@ -10,14 +10,14 @@ REPORT_COLUMNS = ("Turno", "Funcionário", "Data", "Início", "Término", "Final
 
 
 @typeguard.typechecked
-class ReportLoader(Loader.Loader):
+class ReportLoader(Loader.Loader[polars.DataFrame]):
 
     def process_file(
             self,
             path: pathlib.Path,
             encoding: typing.Optional[str] = None
         ) -> polars.DataFrame:
-        report_content = open(path, encoding = encoding or self.detect_encoding(path)).read()
+        report_content = open(path, encoding = encoding or Loader.Loader.detect_encoding(path)).read()
 
         # Remove unuseful header
         report_content = report_content.split("\n", maxsplit = 5)[-1]

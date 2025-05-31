@@ -6,32 +6,35 @@ import typeguard
 import typing
 
 
+T = typing.TypeVar("T")
+
+
 @typeguard.typechecked
-class Loader(abc.ABC):
+class Loader(abc.ABC, typing.Generic[T]):
 
     def process_files(
             self,
             paths: typing.Iterable[pathlib.Path],
             encoding: typing.Optional[str] = None
-        ) -> typing.Tuple[polars.DataFrame, ...]:
-        dataframes: typing.List[polars.DataFrame] = list()
+        ) -> typing.Tuple[T, ...]:
+        processed_files: typing.List[T] = list()
 
         for path in paths:
             try:
-                dataframe = self.process_file(path, encoding or self.detect_encoding(path))
+                processed_file = self.process_file(path, encoding or Loader.detect_encoding(path))
             except Exception as e:
                 Exception(f"Error processing file \"{path}\": {e}")
             else:
-                dataframes.append(dataframe)
+                processed_files.append(processed_file)
 
-        return tuple(dataframes)
+        return tuple(processed_files)
 
 
     def process_file(
             self,
             path: pathlib.Path,
             encoding: typing.Optional[str] = None
-        ) -> polars.DataFrame:
+        ) -> T:
         raise NotImplementedError("Subclasses must implement this method.")
 
 
@@ -90,8 +93,8 @@ class Loader(abc.ABC):
         return tuple(paths)
 
 
+    @staticmethod
     def detect_encoding(
-            self,
             path: pathlib.Path
         ) -> str:
         with open(path, "rb") as file:
