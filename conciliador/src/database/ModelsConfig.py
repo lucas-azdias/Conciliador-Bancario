@@ -207,7 +207,9 @@ class ModelsConfig():
             Finisher.Finisher.__table__.update().values(
                 payment_value = payment_value
             ).where(
-                Finisher.Finisher.id == target.id
+                sqlalchemy.and_(
+                    Finisher.Finisher.id == target.id
+                )
             )
         )
 

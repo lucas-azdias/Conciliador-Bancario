@@ -46,6 +46,19 @@ class Verification(BaseModel.BaseModel):
 
 
     # Computed columns
+    @property
+    def str_date(self) -> str:
+        return self.date.isoformat()
+
+    @str_date.setter
+    def str_date(self, value: datetime.date | str) -> None:
+        if isinstance(value, str):
+            self.date = datetime.date.fromisoformat(value)
+        else:
+            self.date = value
+
+
+    # Computed columns
     @sqlalchemy.ext.hybrid.hybrid_property
     def finishers_value(self) -> int:
         return sum(finisher.value for finisher in self.finishers)

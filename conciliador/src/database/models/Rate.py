@@ -38,6 +38,19 @@ class Rate(BaseModel.BaseModel):
     )
 
 
+    # Computed columns
+    @property
+    def str_start_time(self) -> str:
+        return self.start_time.isoformat()
+
+    @str_start_time.setter
+    def str_start_time(self, value: datetime.datetime | str) -> None:
+        if isinstance(value, str):
+            self.start_time = datetime.datetime.fromisoformat(value)
+        else:
+            self.start_time = value
+
+
     # Relationships
     type: sqlalchemy.orm.Mapped["Type"] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "rates"

@@ -88,7 +88,7 @@ with Session(engine) as session:
 with Session(engine) as session:
     finisher2 = session.get(Finisher.Finisher, 2)
     finisher2.name = "ELO CRÉDITO"
-    rate1 = session.get(Rate.Rate, 1)
+    rate1 = session.get(Rate.Rate, 9)
     rate1.rate = 0.05
     statemententry1 = session.get(StatementEntry.StatementEntry, 1)
     statemententry1.name = "PIX CREDITO: JULIANO"

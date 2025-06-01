@@ -202,5 +202,46 @@
             "value_pattern": "^-\\d+$"
         }
     ],
-    "rate": []
+    "rate": [
+        {
+            "type_id": "card.credit.visa",
+            "rate": 0.0128,
+            "str_start_time": "2025-03-19T00:00:00.000000"
+        },
+        {
+            "type_id": "card.credit.master",
+            "rate": 0.0128,
+            "str_start_time": "2025-03-19T00:00:00.000000"
+        },
+        {
+            "type_id": "card.credit.elo",
+            "rate": 0.0178,
+            "str_start_time": "2025-03-19T00:00:00.000000"
+        },
+        {
+            "type_id": "card.credit.hipercard",
+            "rate": 0.0178,
+            "str_start_time": "2025-03-19T00:00:00.000000"
+        },
+        {
+            "type_id": "card.credit.amex",
+            "rate": 0.0178,
+            "str_start_time": "2025-03-19T00:00:00.000000"
+        },
+        {
+            "type_id": "card.debit.visa",
+            "rate": 0.0065,
+            "str_start_time": "2025-03-19T00:00:00.000000"
+        },
+        {
+            "type_id": "card.debit.master",
+            "rate": 0.0065,
+            "str_start_time": "2025-03-19T00:00:00.000000"
+        },
+        {
+            "type_id": "card.debit.elo",
+            "rate": 0.0115,
+            "str_start_time": "2025-03-19T00:00:00.000000"
+        }
+    ]
 }

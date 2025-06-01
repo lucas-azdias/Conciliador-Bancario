@@ -37,6 +37,30 @@ class Report(BaseModel.BaseModel):
     )
 
 
+    # Computed columns
+    @property
+    def str_start_time(self) -> str:
+        return self.start_time.isoformat()
+
+    @property
+    def str_end_time(self) -> str:
+        return self.end_time.isoformat()
+
+    @str_start_time.setter
+    def str_start_time(self, value: datetime.datetime | str) -> None:
+        if isinstance(value, str):
+            self.start_time = datetime.datetime.fromisoformat(value)
+        else:
+            self.start_time = value
+
+    @str_end_time.setter
+    def str_end_time(self, value: datetime.datetime | str) -> None:
+        if isinstance(value, str):
+            self.end_time = datetime.datetime.fromisoformat(value)
+        else:
+            self.end_time = value
+
+
     # Relationships
     finishers: sqlalchemy.orm.Mapped[typing.List["Finisher"]] = sqlalchemy.orm.relationship( # type: ignore
         back_populates = "report",
