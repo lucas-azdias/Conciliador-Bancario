@@ -83,6 +83,21 @@ docs = ["Sphinx", "furo"]
 test = ["objgraph", "psutil"]
 
 [[package]]
+name = "holidays"
+version = "0.73"
+description = "Open World Holidays Framework"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "holidays-0.73-py3-none-any.whl", hash = "sha256:2baec1a0e66d89777a824be616141f9aff75fc90d9efeb2e10281bdeb2f5b965"},
+    {file = "holidays-0.73.tar.gz", hash = "sha256:36fd6ac8c340658bed0b3cc4e0b476b3726ff0c8f2cd384f4a1adbbfc9d0cef2"},
+]
+
+[package.dependencies]
+python-dateutil = "*"
+
+[[package]]
 name = "numpy"
 version = "2.2.6"
 description = "Fundamental package for array computing in Python"
@@ -538,4 +553,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4"
-content-hash = "a1338ef2de6275c7e7a5eeefdb2ebe1148cd387a045c337c09721af4abfd2e9b"
+content-hash = "742c2355e51296bd2d445103233e6170f73ce0a407a49c2ef30ddf0005fd3807"

@@ -1,7 +1,9 @@
 import datetime
+import holidays
 import math
 import pathlib
 import re
+import holidays.countries
 import sqlalchemy
 import sqlalchemy.orm
 import typeguard
@@ -138,6 +140,12 @@ class ModelsConfig():
         if type_id == "cash":
             payment_date += datetime.timedelta(days = 1 if report_shift > 0 else 0)
 
+        # Fix payment day to next business day
+        brazil_holidays: holidays.countries.brazil.BR = holidays.countries.brazil.BR()
+        if payment_date:
+            while not brazil_holidays.is_working_day(payment_date):
+                payment_date += datetime.timedelta(days = 1)
+
         key: sqlalchemy.CursorResult = connection.execute(
             Finisher.Finisher.__table__.update().values(
                 type_id = type_id,
@@ -176,9 +184,9 @@ class ModelsConfig():
 
         session: sqlalchemy.orm.Session = sqlalchemy.orm.session.object_session(target)
 
-        rate: Rate.Rate
+        rate_rate: float
         if "parent_target" in kwargs:
-            rate = kwargs["parent_target"]
+            rate_rate = kwargs["parent_target"].rate
         else:
             result: typing.Optional[Rate.Rate] = session.query(
                 Rate.Rate
@@ -188,12 +196,12 @@ class ModelsConfig():
                 Rate.Rate.start_time.desc()
             ).first()
 
-            if not result:
-                return
+            if result:
+                rate_rate = result.rate
+            else:
+                rate_rate = 0
 
-            rate = result
-
-        payment_value: int = math.trunc((target.value / 100) * (1 - rate.rate) * 100)
+        payment_value: int = math.trunc((target.value / 100) * (1 - rate_rate) * 100)
 
         key: sqlalchemy.CursorResult = connection.execute(
             Finisher.Finisher.__table__.update().values(

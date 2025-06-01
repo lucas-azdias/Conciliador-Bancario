@@ -214,7 +214,7 @@ class Conciliador():
                     polars.col("statement_entry.type_id") == type_id
                 )
                 print(type_id, current_date)
-                print(sum(type_day_finishers["finisher.value"].to_list()))
+                print(sum([value for value in type_day_finishers["finisher.payment_value"].to_list() if value]))
                 print(sum(type_day_statement_entries["statement_entry.value"].to_list()))
                 print(type_day_finishers)
                 print(type_day_statement_entries)

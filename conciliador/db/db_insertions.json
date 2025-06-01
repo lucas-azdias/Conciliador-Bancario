@@ -201,5 +201,6 @@
             "pattern": null,
             "value_pattern": "^-\\d+$"
         }
-    ]
+    ],
+    "rate": []
 }

@@ -196,7 +196,7 @@ def main():
 
         case "link":
             from datetime import date
-            conciliador.link(date(2025, 2, 25), date(2025, 2, 25))
+            conciliador.link(date(2025, 4, 24), date(2025, 4, 24))
 
         case "all":
             conciliador.load_reports()
