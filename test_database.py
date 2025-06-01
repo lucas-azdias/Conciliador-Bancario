@@ -1,14 +1,14 @@
-from sqlalchemy import create_engine, Column
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.attributes import set_committed_value
 from datetime import datetime, date
-from conciliador.src.database.models import Report, Statement, StatementEntry, Finisher, Rate, Type
+from conciliador.src.database.models import Report, Statement, StatementEntry, Finisher, Rate
 from conciliador.src.database import BaseModel, ModelsConfig
+from pathlib import Path
 
 # Create engine and tables
 engine = create_engine("sqlite:///:memory:", echo=False)
 BaseModel.BaseModel.metadata.create_all(engine)
-ModelsConfig.ModelsConfig.setup_models(Session(engine))
+ModelsConfig.ModelsConfig.setup_models(Session(engine), Path("conciliador/db/db_insertions.json"))
 ModelsConfig.ModelsConfig.activate_listeners()
 
 # Create sample data and query all tables
@@ -37,7 +37,7 @@ with Session(engine) as session:
     session.commit()
 
     # Create Rates
-    rate1 = Rate.Rate(rate=0.02, start_time=datetime(2000, 1, 1), type_id=1)
+    rate1 = Rate.Rate(rate=0.02, start_time=datetime(2000, 1, 1), type_id="cash")
     session.add_all([rate1])
     session.commit()
 

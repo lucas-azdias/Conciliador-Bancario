@@ -1,0 +1,205 @@
+{
+    "type": [
+        {
+            "id": "cash"
+        },
+        {
+            "id": "revenue"
+        },
+        {
+            "id": "usage_and_consumption"
+        },
+        {
+            "id": "installment"
+        },
+        {
+            "id": "pix"
+        },
+        {
+            "id": "card.debit.visa"
+        },
+        {
+            "id": "card.debit.master"
+        },
+        {
+            "id": "card.debit.elo"
+        },
+        {
+            "id": "card.credit.visa"
+        },
+        {
+            "id": "card.credit.master"
+        },
+        {
+            "id": "card.credit.elo"
+        },
+        {
+            "id": "card.credit.hipercard"
+        },
+        {
+            "id": "card.credit.amex"
+        },
+        {
+            "id": "income"
+        },
+        {
+            "id": "outcome"
+        }
+    ],
+    "finisher_pattern": [
+        {
+            "type_id": "cash",
+            "pattern": "^RECEBIMENTO DINHEIRO(?!.*RECEITAS)$",
+            "payment_interval": 0
+        },
+        {
+            "type_id": "revenue",
+            "pattern": "^.*RECEITAS$"
+        },
+        {
+            "type_id": "usage_and_consumption",
+            "pattern": "^USO E CONSUMO$"
+        },
+        {
+            "type_id": "installment",
+            "pattern": "^PRAZO$"
+        },
+        {
+            "type_id": "pix",
+            "pattern": "^PIX.*$",
+            "payment_interval": 0
+        },
+        {
+            "type_id": "card.credit.visa",
+            "pattern": "^VISA CR[EÉ]DITO$",
+            "payment_interval": 30
+        },
+        {
+            "type_id": "card.credit.master",
+            "pattern": "^MASTER CR[EÉ]DITO$",
+            "payment_interval": 30
+        },
+        {
+            "type_id": "card.credit.elo",
+            "pattern": "^ELO CR[EÉ]DITO$",
+            "payment_interval": 30
+        },
+        {
+            "type_id": "card.credit.hipercard",
+            "pattern": "^HIPER$",
+            "payment_interval": 30
+        },
+        {
+            "type_id": "card.credit.amex",
+            "pattern": "^.*AMEX$",
+            "payment_interval": 30
+        },
+        {
+            "type_id": "card.credit.visa",
+            "pattern": "^PR[EÉ][ -]?PAGO VISA CR[EÉ]DITO$",
+            "payment_interval": 2
+        },
+        {
+            "type_id": "card.credit.master",
+            "pattern": "^PR[EÉ][ -]?PAGO MASTER CR[EÉ]DITO$",
+            "payment_interval": 2
+        },
+        {
+            "type_id": "card.credit.elo",
+            "pattern": "^PR[EÉ][ -]?PAGO ELO CR[EÉ]DITO$",
+            "payment_interval": 2
+        },
+        {
+            "type_id": "card.debit.visa",
+            "pattern": "^VISA D[EÉ]BITO$",
+            "payment_interval": 1
+        },
+        {
+            "type_id": "card.debit.master",
+            "pattern": "^MASTER(?:CARD)? D[EÉ]BITO$",
+            "payment_interval": 1
+        },
+        {
+            "type_id": "card.debit.elo",
+            "pattern": "^ELO D[EÉ]BITO$",
+            "payment_interval": 1
+        },
+        {
+            "type_id": "card.debit.visa",
+            "pattern": "^PR[EÉ][ -]?PAGO VISA D[EÉ]BITO$",
+            "payment_interval": 1
+        },
+        {
+            "type_id": "card.debit.master",
+            "pattern": "^PR[EÉ][ -]?PAGO MASTER(?:CARD)? D[EÉ]BITO$",
+            "payment_interval": 1
+        },
+        {
+            "type_id": "card.debit.elo",
+            "pattern": "^PR[EÉ][ -]?PAGO ELO D[EÉ]BITO$",
+            "payment_interval": 1
+        }
+    ],
+    "statement_entry_pattern": [
+        {
+            "type_id": "cash",
+            "pattern": "^DEPÓSITO.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "pix",
+            "pattern": "^PIX CREDITO(?!.*TRR IVAI COMERCIO DE COMB).*$|^TRANSFERENCIA.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "card.credit.visa",
+            "pattern": "^VENDAS CARTAO TIPO CREDITO.*CIELO-VISA.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "card.credit.master",
+            "pattern": "^VENDAS CARTAO TIPO CREDITO.*CIELO-MASTER.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "card.credit.elo",
+            "pattern": "^VENDAS CARTAO TIPO CREDITO.*CIELO-ELO.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "card.credit.hipercard",
+            "pattern": "^VENDAS CARTAO TIPO CREDITO.*CIELO-HIPERCA.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "card.credit.amex",
+            "pattern": "^VENDAS CARTAO TIPO CREDITO.*CIELO-AMERICA.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "card.debit.visa",
+            "pattern": "^VENDAS CARTAO TIPO DEBITO.*CIELO-VISA.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "card.debit.master",
+            "pattern": "^VENDAS CARTAO TIPO DEBITO.*CIELO-MAESTRO.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "card.debit.elo",
+            "pattern": "^VENDAS CARTAO TIPO DEBITO.*CIELO-ELO.*$",
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "income",
+            "pattern": null,
+            "value_pattern": "^\\d+$"
+        },
+        {
+            "type_id": "outcome",
+            "pattern": null,
+            "value_pattern": "^-\\d+$"
+        }
+    ]
+}

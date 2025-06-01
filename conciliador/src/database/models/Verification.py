@@ -22,7 +22,7 @@ class Verification(BaseModel.BaseModel):
         nullable = False,
         autoincrement = True
     )
-    type_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
+    type_id: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column(
         sqlalchemy.ForeignKey("type.id"),
         nullable = False
     )

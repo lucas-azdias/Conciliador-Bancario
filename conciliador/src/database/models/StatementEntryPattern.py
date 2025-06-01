@@ -1,4 +1,3 @@
-import datetime
 import sqlalchemy
 import sqlalchemy.orm
 import typeguard
@@ -7,10 +6,10 @@ from .. import BaseModel
 
 
 @typeguard.typechecked
-class Rate(BaseModel.BaseModel):
+class StatementEntryPattern(BaseModel.BaseModel):
 
     # Table name
-    __tablename__ = "rate"
+    __tablename__ = "statement_entry_pattern"
 
 
     # Columns
@@ -22,23 +21,23 @@ class Rate(BaseModel.BaseModel):
     )
     type_id: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column(
         sqlalchemy.ForeignKey("type.id"),
-        nullable = False
+        nullable = True
     )
-    rate: sqlalchemy.orm.Mapped[float] = sqlalchemy.orm.mapped_column(
-        nullable = False
+    pattern: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column(
+        nullable = True
     )
-    start_time: sqlalchemy.orm.Mapped[datetime.datetime] = sqlalchemy.orm.mapped_column(
+    value_pattern: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column(
         nullable = False
     )
 
 
     # Constraints
     __table_args__ = (
-        sqlalchemy.UniqueConstraint("start_time", "type_id", name = "unique_start_time_type_id"),
+        sqlalchemy.UniqueConstraint("pattern", "value_pattern", name = "unique_pattern_value_pattern"),
     )
 
 
     # Relationships
     type: sqlalchemy.orm.Mapped["Type"] = sqlalchemy.orm.relationship( # type: ignore
-        back_populates = "rates"
+        back_populates = "statement_entry_patterns"
     )

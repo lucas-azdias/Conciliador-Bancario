@@ -23,7 +23,7 @@ class StatementEntry(BaseModel.BaseModel):
         sqlalchemy.ForeignKey("statement.id"),
         nullable = False
     )
-    type_id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(
+    type_id: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column(
         sqlalchemy.ForeignKey("type.id"),
         nullable = True
     )

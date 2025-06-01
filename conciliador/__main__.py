@@ -88,6 +88,15 @@ def main():
         help = "Database log file path (optional)"
     )
 
+    # Optional database insertions path
+    parser.add_argument(
+        "--database-insertions-path",
+        dest = "database-insertions-path",
+        default = os.getenv("DATABASE_INSERTIONS_PATH") or "conciliador/db/db_insertions.json",
+        required = False,
+        help = "Database insertions file path (optional)"
+    )
+
     # Optional currency
     parser.add_argument(
         "--currency",
@@ -144,6 +153,7 @@ def main():
             {
                 "database_uri": args["database-uri"],
                 "database_log_path": pathlib.Path(args["database-log-path"]),
+                "database_insertions_path": pathlib.Path(args["database-insertions-path"]),
                 "currency": args["currency"],
                 "thousands": args["thousands"],
                 "decimals": args["decimals"],
@@ -186,7 +196,7 @@ def main():
 
         case "link":
             from datetime import date
-            conciliador.link(date(2025, 2, 18), date(2025, 2, 20))
+            conciliador.link(date(2025, 2, 25), date(2025, 2, 25))
 
         case "all":
             conciliador.load_reports()

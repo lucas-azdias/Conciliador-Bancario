@@ -22,6 +22,7 @@ class Database():
             self,
             database_uri: str,
             log_path: pathlib.Path,
+            insertions_path: pathlib.Path,
             can_fill: bool = True,
             can_purge: bool = False,
             has_dev_mode: bool = False
@@ -40,7 +41,7 @@ class Database():
         self.sync_schema(can_fill = can_fill, can_purge = can_purge, should_raise_permission_errors = True)
 
         # Setup models
-        ModelsConfig.ModelsConfig.setup_models(self.__sessionmaker())
+        ModelsConfig.ModelsConfig.setup_models(self.__sessionmaker(), insertions_path = insertions_path)
 
         # Load all event listeners
         ModelsConfig.ModelsConfig.activate_listeners()
@@ -64,13 +65,13 @@ class Database():
             self,
             table_name: typing.Type[BaseModel.BaseModel] | str,
             data: typing.Dict[str, typing.Any]
-        ) -> typing.Tuple[int, ...]:
+        ) -> typing.Tuple[typing.Any, ...]:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
         with self.__sessionmaker() as session:
             try:
-                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                model: typing.Type[BaseModel.BaseModel] = BaseModel.BaseModel.get_model(table_name) if isinstance(table_name, str) else table_name
                 instance: BaseModel.BaseModel = model(**data)
                 session.add(instance)
                 session.commit()
@@ -89,13 +90,13 @@ class Database():
             self,
             table_name: typing.Type[BaseModel.BaseModel] | str,
             data: polars.DataFrame
-        ) -> typing.Tuple[int, ...]:
+        ) -> typing.Tuple[typing.Any, ...]:
         if not self.has_table(table_name):
             raise Exception("Table name not found on schema tables.")
 
         with self.__sessionmaker() as session:
             try:
-                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                model: typing.Type[BaseModel.BaseModel] = BaseModel.BaseModel.get_model(table_name) if isinstance(table_name, str) else table_name
                 instances: typing.List[BaseModel.BaseModel] = [model(**record) for record in data.to_dicts()]
                 session.add_all(instances)
                 session.commit()
@@ -127,14 +128,14 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                model: typing.Type[BaseModel.BaseModel] = BaseModel.BaseModel.get_model(table_name) if isinstance(table_name, str) else table_name
                 models: typing.Dict[str, typing.Type[BaseModel.BaseModel]] = {}
                 models[model.__tablename__] = model
                 for join in joins:
                     if not join.left_table_name in models:
-                        models[join.left_table_name] = self.get_model(join.left_table_name)
+                        models[join.left_table_name] = BaseModel.BaseModel.get_model(join.left_table_name)
                     if not join.right_table_name in models:
-                        models[join.right_table_name] = self.get_model(join.right_table_name)
+                        models[join.right_table_name] = BaseModel.BaseModel.get_model(join.right_table_name)
 
                 schema: typing.List[sqlalchemy.Column] = [column for model in models.values() for column in model.__table__.columns]
                 query: sqlalchemy.orm.Query = session.query(*schema)
@@ -265,7 +266,7 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                model: typing.Type[BaseModel.BaseModel] = BaseModel.BaseModel.get_model(table_name) if isinstance(table_name, str) else table_name
                 query: sqlalchemy.orm.Query = session.query(model)
 
                 if conditions:
@@ -303,7 +304,7 @@ class Database():
 
         with self.__sessionmaker() as session:
             try:
-                model: typing.Type[BaseModel.BaseModel] = self.get_model(table_name) if isinstance(table_name, str) else table_name
+                model: typing.Type[BaseModel.BaseModel] = BaseModel.BaseModel.get_model(table_name) if isinstance(table_name, str) else table_name
                 query: sqlalchemy.orm.Query = session.query(model)
 
                 if conditions:
@@ -339,16 +340,6 @@ class Database():
         elif isinstance(table_name, str):
             return table_name in self.__inspector.get_table_names()
         raise TypeError("Invalid table name type.")
-
-
-    def get_model(
-            self,
-            table_name: str
-        ) -> typing.Type[BaseModel.BaseModel]:
-        for subcls in BaseModel.BaseModel.__subclasses__():
-            if hasattr(subcls, "__tablename__") and subcls.__tablename__ == table_name:
-                return subcls
-        raise ValueError(f"Invalid table name \"{table_name}\" was given.")
 
 
     def sync_schema(

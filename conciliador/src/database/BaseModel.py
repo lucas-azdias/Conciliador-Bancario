@@ -19,4 +19,14 @@ class BaseModel(sqlalchemy.orm.DeclarativeBase):
     def to_dict(self) -> typing.Dict[str, typing.Any]:
         instance_dict = self.__dict__
         instance_dict.pop("_sa_instance_state", None)
-        return instance_dict
+        return instance_dict@staticmethod
+
+
+    @staticmethod
+    def get_model(
+            table_name: str
+        ) -> typing.Type["BaseModel"]:
+        for subcls in BaseModel.__subclasses__():
+            if hasattr(subcls, "__tablename__") and subcls.__tablename__ == table_name:
+                return subcls
+        raise ValueError(f"Invalid table name \"{table_name}\" was given.")

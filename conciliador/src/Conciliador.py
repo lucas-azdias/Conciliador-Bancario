@@ -2,6 +2,7 @@ import datetime
 import pathlib
 import polars
 import typeguard
+import typing
 
 from .database import Database
 from .database.join import Join, JoinTypeEnum
@@ -17,6 +18,7 @@ class Conciliador():
             self,
             database_uri: str,
             database_log_path: pathlib.Path,
+            database_insertions_path: pathlib.Path,
             currency: str = "USD",
             thousands: str = ",",
             decimals: str = ".",
@@ -25,6 +27,7 @@ class Conciliador():
         self.__database: Database.Database = Database.Database(
             database_uri,
             database_log_path,
+            database_insertions_path,
             has_dev_mode = has_dev_mode
         )
         self.__currency: Currency.Currency = Currency.Currency(
@@ -41,11 +44,11 @@ class Conciliador():
             can_archive: bool = False,
             can_overwrite_archive: bool = False
         ) -> None:
-        loader = ReportLoader.ReportLoader()
+        loader: ReportLoader.ReportLoader = ReportLoader.ReportLoader()
 
         # Load files and archive them
-        paths = loader.extract_paths(input, folder_filter = "*.csv")
-        dataframes = loader.process_files(paths)
+        paths: typing.Tuple[pathlib.Path, ...] = loader.extract_paths(input, folder_filter = "*.csv")
+        dataframes: typing.Tuple[polars.DataFrame, ...] = loader.process_files(paths)
         if can_archive:
             loader.archive_files(paths, archive, can_overwrite_archive = can_overwrite_archive)
 
@@ -54,7 +57,7 @@ class Conciliador():
             raise Exception("No data was found.")
 
         # Concatenate dataframes and format them
-        concat_df = polars.concat(dataframes, how = "vertical")
+        concat_df: polars.DataFrame = polars.concat(dataframes, how = "vertical")
         concat_df = concat_df.select(
             [
                 polars.col("Turno").cast(polars.Int64).alias("shift"),
@@ -67,7 +70,7 @@ class Conciliador():
         )
 
         # Create reports dataframe
-        reports_df = concat_df.select(
+        reports_df: polars.DataFrame = concat_df.select(
             [
                 polars.col("shift").alias("shift"),
                 polars.col("employee").alias("employee"),
@@ -77,7 +80,7 @@ class Conciliador():
         ).unique()
 
         # Extend database with reports and recover ids
-        last_id = self.__database.extend("report", reports_df)[0]
+        last_id: int = self.__database.extend("report", reports_df)[0]
         reports_df = reports_df.with_columns([
             (polars.Series(name = "id", values = [last_id - (reports_df.height - i - 1) for i in range(reports_df.height)]))
         ])
@@ -90,7 +93,7 @@ class Conciliador():
         )
 
         # Create finishers dataframe
-        finishers_df = concat_df.select(
+        finishers_df: polars.DataFrame = concat_df.select(
             [
                 polars.col("id").alias("report_id"),
                 polars.col("name").alias("name"),
@@ -109,11 +112,11 @@ class Conciliador():
             can_archive: bool = False,
             can_overwrite_archive: bool = False
         ) -> None:
-        loader = StatementLoader.StatementLoader()
+        loader: StatementLoader.StatementLoader = StatementLoader.StatementLoader()
 
         # Load files and archive them
-        paths = loader.extract_paths(input, folder_filter = "*.csv")
-        dataframes = loader.process_files(paths)
+        paths: typing.Tuple[pathlib.Path, ...] = loader.extract_paths(input, folder_filter = "*.csv")
+        dataframes: typing.Tuple[polars.DataFrame, ...] = loader.process_files(paths)
         if can_archive:
             loader.archive_files(paths, archive, can_overwrite_archive = can_overwrite_archive)
 
@@ -122,7 +125,7 @@ class Conciliador():
             raise Exception("No data was found.")
 
         # Concatenate dataframes and create statements dataframe
-        concat_df = polars.concat(dataframes, how = "vertical")
+        concat_df: polars.DataFrame = polars.concat(dataframes, how = "vertical")
         concat_df = concat_df.select(
             [
                 polars.col("Data").str.strptime(polars.Date, "%d/%m/%Y").alias("date"),
@@ -132,14 +135,14 @@ class Conciliador():
         )
 
         # Create statements dataframe
-        statements_df = concat_df.select(
+        statements_df: polars.DataFrame = concat_df.select(
             [
                 polars.col("date").alias("date"),
             ]
         ).unique()
 
         # Extend database with reports and recover ids
-        last_id = self.__database.extend("statement", statements_df)[0]
+        last_id: int = self.__database.extend("statement", statements_df)[0]
         statements_df = statements_df.with_columns([
             (polars.Series(name = "id", values = [last_id - (statements_df.height - i - 1) for i in range(statements_df.height)]))
         ])
@@ -152,7 +155,7 @@ class Conciliador():
         )
 
         # Create statement entries dataframe
-        statement_entries_df = concat_df.select(
+        statement_entries_df: polars.DataFrame = concat_df.select(
             [
                 polars.col("id").alias("statement_id"),
                 polars.col("name").alias("name"),
@@ -169,7 +172,7 @@ class Conciliador():
             start_date: datetime.date,
             end_date: datetime.date
         ) -> None:
-        current_date = start_date - datetime.timedelta(days = 1)
+        current_date: datetime.date = start_date - datetime.timedelta(days = 1)
         while current_date < end_date:
             current_date += datetime.timedelta(days = 1)
 
@@ -195,7 +198,7 @@ class Conciliador():
             )
 
             for type in types.to_dicts():
-                type_id = type["type.id"]
+                type_id: str = type["type.id"]
                 self.__database.delete("verification", date = lambda x: x == current_date)
                 verification_id = self.__database.insert(
                     "verification",
@@ -204,14 +207,17 @@ class Conciliador():
                         "type_id": type_id,
                     }
                 )[0]
-                type_day_finishers = day_finishers.filter(polars.col("finisher.type_id") == type_id)
-                type_day_statement_entries = day_statement_entries.filter(polars.col("statement_entry.type_id") == type_id)
-                print(current_date)
+                type_day_finishers: polars.DataFrame = day_finishers.filter(
+                    polars.col("finisher.type_id") == type_id
+                )
+                type_day_statement_entries: polars.DataFrame = day_statement_entries.filter(
+                    polars.col("statement_entry.type_id") == type_id
+                )
+                print(type_id, current_date)
                 print(sum(type_day_finishers["finisher.value"].to_list()))
                 print(sum(type_day_statement_entries["statement_entry.value"].to_list()))
                 print(type_day_finishers)
                 print(type_day_statement_entries)
-                # TODO FAZER UMA COLUNA PAYMENT_VALUE -> VALOR que será pago após correção por taxa válida (taxa válida será tabela com yield, type, start_time); end_time definido por haver outra com start_time maior
 
 
 if __name__ == "__main__":
